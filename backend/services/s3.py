@@ -21,3 +21,7 @@ def generate_download_url(s3_key: str, expires_in: int = 900) -> str:
 
 def delete_file_from_s3(s3_key:str):
     return s3_client.delete_object(Bucket=BUCKET_NAME, Key=s3_key)
+
+def download_file_from_s3(s3_key: str) -> bytes:
+    response = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
+    return response["Body"].read()

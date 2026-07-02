@@ -17,6 +17,7 @@ export default function TopBar() {
         <Link to="/">Despre Noi</Link>
         <a href="#">Legislatie</a>
         <a href="#">SUPORT</a>
+        {token && <Link to="/admin">Admin</Link>}
         {token
           ? <>
               <Link to="/dashboard">MANAGEMENT</Link>
@@ -24,6 +25,7 @@ export default function TopBar() {
             </>
           : <Link to="/login">Logare</Link>
         }
+        
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getFiles, downloadExcel } from "../api/client";
+import { getFiles, downloadExcel, downloadAllPdfs } from "../api/client";
 import { useAuthStore } from "../store/authStore";
 import TopBar from "../components/TopBar";
 import UploadCard from "../components/UploadCard";
@@ -42,12 +42,22 @@ export default function DashboardPage() {
         <div className="intro-text">Platforma de Gestionare a Documentelor Digitale</div>
         <UploadCard registerType={registerType} onUploadSuccess={fetchFiles} />
         <DocumentList files={files} registerType={registerType} onDeleteSuccess={fetchFiles} />
-        <button 
-          className="btn-secondary"
-          onClick={() => downloadExcel(token, registerType)}
-        >
-          Descarcă Excel — {registerType.toUpperCase()}
-        </button>
+        <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
+  <button
+        className="btn-secondary"
+        style={{ transition: "none", animation: "none" }}
+        onClick={() => downloadExcel(token, registerType)}
+      >
+        Descarcă Excel — {registerType.toUpperCase()}
+      </button>
+      <button
+        className="btn-secondary"
+        style={{ transition: "none", animation: "none" }}
+        onClick={() => downloadAllPdfs(token, registerType)}
+      >
+        Descarcă Toate PDF-urile — {registerType.toUpperCase()}
+      </button>
+    </div>
       </div>
     </>
   );

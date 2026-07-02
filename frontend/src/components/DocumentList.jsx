@@ -31,12 +31,28 @@ export default function DocumentList({ files, registerType, onDeleteSuccess }) {
           <ul className="document-list">
             {displayed.map(f => (
               <li key={f.id} className="document-item">
-                <div>
+                <div className="document-info">
                   <div className="doc-name">📄 {f.filename}</div>
-                  <div className="doc-meta">Registru: {f.register_type.toUpperCase()}</div>
+                  <div className="doc-meta">
+                    Registru: {f.register_type.toUpperCase()}
+                  </div>
                 </div>
-                <button onClick={() => handleDownload(f.id)} className="btn-secondary">Descarcă</button>
-                <button onClick={() => handleDelete(f.id)} className="btn-secondary">Sterge Fisier</button>
+
+                <div className="document-actions">
+                  <button
+                    onClick={() => handleDownload(f.id)}
+                    className="btn-secondary"
+                  >
+                    Descarcă
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(f.id)}
+                    className="btn-secondary"
+                  >
+                    Șterge Fișier
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

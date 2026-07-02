@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from core.database import get_db
 from core.security import get_current_user
 from models.entry import DocumentEntry
@@ -8,7 +9,7 @@ from schemas.entry import EntryCreate, EntryResponse
 from typing import List
 import openpyxl
 from io import BytesIO
-
+from datetime import date
 router = APIRouter()
 
 TITLE = [
@@ -89,3 +90,28 @@ def download_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@router.get("/next-nr/{register_type}")
+def get_next_nr(
+    register_type: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    today = date.today()
+    date_prefix = today.strftime("%Y/%m/%d")
+    date_compact = today.strftime("%Y%m%d")
+
+    # count how many entries exist for this user + register + today
+    count_today = db.query(DocumentEntry).filter(
+        DocumentEntry.user_id == current_user["id"],
+        DocumentEntry.register_type == register_type,
+        func.date(DocumentEntry.created_at) == today
+    ).count()
+
+    next_count = count_today + 1
+    count_str = str(next_count).zfill(3)  # 001, 002, etc.
+
+    return {
+        "nr_inregistrare": f"{date_prefix}/{count_str}",
+        "cod": f"{date_compact}{count_str}"
+    }

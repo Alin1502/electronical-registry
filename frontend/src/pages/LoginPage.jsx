@@ -23,6 +23,7 @@ export default function LoginPage() {
       if (data.message) {
         setStatus("Înregistrare cu succes! Autentificați-vă.");
         setIsRegistering(false);
+        window.location.reload();
       } else {
         setStatus(`Eroare: ${data.detail}`);
       }
@@ -45,7 +46,7 @@ export default function LoginPage() {
       <div className="main-content auth-container">
         <div className="corporate-card">
           <h3 style={{ textAlign: "center" }}>{isRegistering ? "Creare Cont Nou" : "Autentificare Utilizator"}</h3>
-          <form onSubmit={handleAuth}>
+          <form onSubmit={handleAuth} autoComplete="off">
             <div className="form-group">
               <label>Nume Utilizator</label>
               <input className="form-control" type="text" value={username} onChange={e => setUsername(e.target.value)} required />

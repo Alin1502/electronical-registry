@@ -1,5 +1,6 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { getNextNr, getDepartments } from "../api/client";
+import { useAuthStore } from "../store/authStore";
 const FIELDS = [
   { key: "nr_inregistrare", label: "Nr Înregistrare" },
   { key: "cod", label: "Cod" },
@@ -24,7 +25,25 @@ export default function UploadData({ registerType, onConfirm, onCancel }) {
     e.preventDefault();
     onConfirm({ ...form, register_type: registerType });
   };
+  const { token } = useAuthStore();
+  const [departments, setDepartments] = useState([]);
 
+  useEffect(() => {
+    getDepartments(token).then(d => {
+      if (Array.isArray(d)) setDepartments(d);
+    });
+  }, []);
+  useEffect(() => {
+  getNextNr(token, registerType).then(data => {
+    if (data.nr_inregistrare) {
+      setForm(prev => ({
+        ...prev,
+        nr_inregistrare: data.nr_inregistrare,
+        cod: data.cod
+      }));
+    }
+  });
+}, [registerType]);
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
@@ -36,12 +55,25 @@ export default function UploadData({ registerType, onConfirm, onCancel }) {
             {FIELDS.map(({ key, label }) => (
               <div key={key} className="form-group" style={{ marginBottom: "12px" }}>
                 <label style={{ fontSize: "0.85rem" }}>{label}</label>
-                <input
-                  className="form-control"
-                  type="text"
-                  value={form[key]}
-                  onChange={e => handleChange(key, e.target.value)}
-                />
+                {key === "repartizare_dpt" ? (
+                  <select
+                    className="form-control"
+                    value={form[key]}
+                    onChange={e => handleChange(key, e.target.value)}
+                  >
+                    <option value="">— Selectați departamentul —</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="form-control"
+                    type="text"
+                    value={form[key]}
+                    onChange={e => handleChange(key, e.target.value)}
+                  />
+                )}
               </div>
             ))}
           </div>

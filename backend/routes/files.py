@@ -5,9 +5,12 @@ from core.database import get_db
 from core.security import get_current_user
 from models.file import UploadedFile
 from schemas.file import FileResponse, DownloadResponse, RemoveResponse
-from services.s3 import upload_file_to_s3, generate_download_url, delete_file_from_s3
+from services.s3 import upload_file_to_s3, generate_download_url, delete_file_from_s3, download_file_from_s3
 from typing import List
 from models.entry import DocumentEntry
+import zipfile
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 router = APIRouter()
 
 @router.post("/upload")
@@ -80,3 +83,31 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
 
 
     return {"status": "success", "message":"File was deleted successfully from the registry"}
+
+@router.get("/download-all/{register_type}")
+def download_all_files(register_type: str,db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
+    files = db.query(UploadedFile).filter(
+        UploadedFile.user_id == current_user["id"],
+        UploadedFile.register_type == register_type
+    ).all()
+
+    if not files:
+        raise HTTPException(status_code=404, detail="No files found for this register")
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for file_record in files:
+            try:
+                file_bytes = download_file_from_s3(file_record.s3_key)
+                zip_file.writestr(file_record.filename, file_bytes)
+            except Exception:
+                continue  # skip files that fail, don't crash the whole zip
+
+    zip_buffer.seek(0)
+    safe_name = register_type.replace("/", "-")
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={safe_name}.zip"}
+    )
