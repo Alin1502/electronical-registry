@@ -1,9 +1,13 @@
 from core.database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime
+from datetime import datetime
+
 
 class DocumentEntry(Base):
     __tablename__ = "document_entries"
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     register_type = Column(String, nullable=False)
