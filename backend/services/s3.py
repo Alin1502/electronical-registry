@@ -12,7 +12,7 @@ BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 def upload_file_to_s3(file, s3_key: str):
     s3_client.upload_fileobj(file, BUCKET_NAME, s3_key)
 
-def generate_download_url(s3_key: str, expires_in: int = 900) -> str:
+def generate_download_url(s3_key: str, expires_in: int = 300) -> str:
     return s3_client.generate_presigned_url(
         'get_object',
         Params={'Bucket': BUCKET_NAME, 'Key': s3_key},

@@ -1,0 +1,79 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		--background: 196 80% 98%;
+		--foreground: 202 38% 13%;
+		--card: 0 0% 100%;
+		--card-foreground: 202 38% 13%;
+		--primary: 194 65% 40%;
+		--primary-foreground: 190 100% 98%;
+		--muted: 192 33% 95%;
+		--muted-foreground: 197 21% 40%;
+		--accent: 186 44% 91%;
+		--accent-foreground: 197 39% 22%;
+		--border: 191 26% 86%;
+		--input: 191 26% 86%;
+		--ring: 194 55% 47%;
+		--success: 161 43% 42%;
+		--success-foreground: 165 100% 98%;
+		--warning: 35 91% 54%;
+		--warning-foreground: 32 62% 16%;
+		--danger: 0 66% 55%;
+		--danger-foreground: 0 0% 100%;
+		--radius: 1.25rem;
+	}
+
+	.dark {
+		--background: 200 36% 8%;
+		--foreground: 194 45% 95%;
+		--card: 200 33% 12%;
+		--card-foreground: 194 45% 95%;
+		--primary: 189 70% 52%;
+		--primary-foreground: 197 39% 14%;
+		--muted: 201 28% 18%;
+		--muted-foreground: 194 22% 72%;
+		--accent: 196 30% 18%;
+		--accent-foreground: 194 45% 95%;
+		--border: 199 24% 24%;
+		--input: 199 24% 24%;
+		--ring: 189 70% 52%;
+	}
+
+	* {
+		@apply border-border;
+	}
+
+	html,
+	body,
+	#root {
+		min-height: 100%;
+	}
+
+	body {
+		@apply bg-background text-foreground antialiased;
+		font-family: "Inter", sans-serif;
+		background-image:
+			radial-gradient(circle at top left, rgba(99, 205, 218, 0.18), transparent 32%),
+			radial-gradient(circle at 80% 5%, rgba(90, 157, 255, 0.14), transparent 28%),
+			linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(237, 248, 252, 0.85));
+	}
+}
+
+@layer components {
+	.panel {
+		@apply rounded-2xl bg-card/95 shadow-soft ring-1 ring-border/70 backdrop-blur;
+	}
+
+	.page-title {
+		@apply text-3xl font-semibold tracking-tight text-foreground md:text-4xl;
+	}
+
+	.section-subtitle {
+		@apply text-sm font-medium uppercase tracking-[0.14em] text-primary/80;
+	}
+}

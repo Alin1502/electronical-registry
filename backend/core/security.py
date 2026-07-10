@@ -32,3 +32,5 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Security(securi
         return {"username": username, "id": user_id, "company_name":company_name}
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
+    
+

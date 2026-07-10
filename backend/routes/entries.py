@@ -8,6 +8,7 @@ from models.entry import DocumentEntry
 from schemas.entry import EntryCreate, EntryResponse
 from typing import List
 import openpyxl
+from openpyxl.styles import Border, Side
 from io import BytesIO
 from datetime import date
 router = APIRouter()
