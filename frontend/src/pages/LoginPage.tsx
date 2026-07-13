@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { loginUser, registerUser } from "@/api/client.ts";
+import { loginUser, registerUser } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/store/authStore.ts";
+import { useAuthStore } from "@/store/authStore";
 
 interface ValidationErrors {
   username?: string;

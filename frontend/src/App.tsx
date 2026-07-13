@@ -1,11 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import HomePage from "@/pages/HomePage.tsx";
-import LoginPage from "@/pages/LoginPage.tsx";
-import DashboardPage from "@/pages/DashboardPage.tsx";
-import AdminPage from "@/pages/AdminPage.tsx";
-import { useAuthStore } from "@/store/authStore.ts";
+import HomePage from "@/pages/HomePage";
+import LoginPage from "@/pages/LoginPage";
+import DashboardPage from "@/pages/DashboardPage";
+import AdminPage from "@/pages/AdminPage";
+import { useAuthStore } from "@/store/authStore";
 import { isTokenValid } from "@/lib/auth";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {

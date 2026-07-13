@@ -9,6 +9,14 @@ export type RegisterType =
   | "unic de control"
   | "evidenta a salariatilor";
 
+
+export interface HistoryEvent {
+  id: number;
+  entry_id: number;
+  status: string;
+  note: string | null;
+  created_at: string;
+}  
 export interface UserClaims {
   sub: string;
   id: number;

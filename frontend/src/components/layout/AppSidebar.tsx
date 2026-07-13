@@ -20,7 +20,7 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        "sticky top-24 hidden h-[calc(100vh-7rem)] rounded-3xl border border-border/80 bg-card/85 p-4 shadow-soft backdrop-blur md:block",
+        "sticky top-24 hidden h-[calc(100vh-7rem)] rounded-md border border-border/80 bg-card/85 p-4 shadow-soft backdrop-blur md:block",
         collapsed ? "w-20" : "w-64",
       )}
     >
@@ -32,7 +32,7 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
             end={item.end}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition",
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition",
                 isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted hover:text-foreground",
               )
             }

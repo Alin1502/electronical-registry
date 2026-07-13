@@ -1,6 +1,10 @@
-from core.database import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
+from core.database import Base
+
 
 class UploadedFile(Base):
     __tablename__ = "files"
@@ -9,4 +13,5 @@ class UploadedFile(Base):
     s3_key = Column(String, unique=True, nullable=False)
     register_type = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     owner = relationship("User", back_populates="files")

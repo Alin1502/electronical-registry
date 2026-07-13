@@ -6,13 +6,14 @@ import {
   createEntry,
   downloadAllPdfs,
   downloadExcel,
+  getDepartments,
   getDownloadUrl,
   getEntries,
   getFiles,
   getNextNr,
   removeFile,
   uploadFile,
-} from "@/api/client.ts";
+} from "@/api/client";
 import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AdvancedFilterPanel, type RegistryFilters } from "@/components/registry/AdvancedFilterPanel";
@@ -32,8 +33,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuthStore } from "@/store/authStore.ts";
-import type { DocumentEntry, EntryPayload, UploadedFile } from "@/types/registry";
+import { useAuthStore } from "@/store/authStore";
+import type { DocumentEntry, EntryPayload, NamedEntity, UploadedFile } from "@/types/registry";
 import { formatDate } from "@/lib/utils";
 
 const REGISTERS = [
@@ -47,6 +48,18 @@ const REGISTERS = [
   "unic de control",
   "evidenta a salariatilor",
 ] as const;
+
+const REGISTER_LABELS: Record<string, string> = {
+  contracte: "Contracte",
+  "intrari/iesiri": "Intrări / Ieșiri",
+  "decizii/hotarari": "Decizii / Hotărâri",
+  facturi: "Facturi",
+  jurnal: "Jurnal",
+  inventar: "Inventar",
+  casa: "Casa",
+  "unic de control": "Unic de Control",
+  "evidenta a salariatilor": "Evidența Salariaților",
+};
 
 const initialForm: EntryPayload = {
   register_type: REGISTERS[0],
@@ -69,6 +82,7 @@ export default function DashboardPage() {
   const [activeRegister, setActiveRegister] = useState<string>(REGISTERS[0]);
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [departments, setDepartments] = useState<NamedEntity[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -85,6 +99,7 @@ export default function DashboardPage() {
       navigate("/login");
       return;
     }
+    void loadDepartments();
   }, [token, navigate]);
 
   useEffect(() => {
@@ -97,6 +112,18 @@ export default function DashboardPage() {
     () => files.filter((file) => file.register_type === activeRegister),
     [files, activeRegister],
   );
+
+  const activeRegisterLabel = REGISTER_LABELS[activeRegister] ?? activeRegister;
+
+  async function loadDepartments() {
+    if (!token) return;
+    try {
+      const data = await getDepartments(token);
+      setDepartments(data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca departamentele");
+    }
+  }
 
   async function refreshData(registerType: string) {
     if (!token) return;
@@ -220,7 +247,8 @@ export default function DashboardPage() {
         <StatCard title="Files in Register" value={<AnimatedCounter value={registerFiles.length} />} detail="PDF archive linked" />
         <StatCard
           title="Active Register"
-          value={activeRegister.split("/")[0].toUpperCase()}
+          value={activeRegisterLabel}
+          valueClassName="max-w-[14rem] break-words text-2xl leading-tight md:text-3xl"
           detail="switch from tabs below"
         />
       </section>
@@ -230,8 +258,8 @@ export default function DashboardPage() {
           <Tabs value={activeRegister} onValueChange={setActiveRegister}>
             <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0">
               {REGISTERS.map((register) => (
-                <TabsTrigger key={register} value={register} className="rounded-xl border border-border bg-card text-xs">
-                  {register}
+                <TabsTrigger key={register} value={register} className="rounded-md border border-border bg-card text-xs">
+                  {REGISTER_LABELS[register] ?? register}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -251,7 +279,7 @@ export default function DashboardPage() {
               <p className="mb-4 text-sm text-muted-foreground">
                 Uploading a PDF will immediately ask for entry details (nr, cod, rezumat, etc.) in the next step.
               </p>
-              <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-muted/20 p-4 md:flex-row md:items-center">
+              <div className="mb-4 flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/20 p-4 md:flex-row md:items-center">
                 <Input type="file" accept="application/pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
                 <Button disabled={!selectedFile || uploading} onClick={handleUploadFile}>
                   <UploadCloud className="mr-2 h-4 w-4" />
@@ -262,14 +290,14 @@ export default function DashboardPage() {
               {loadingFiles ? (
                 <p className="text-sm text-muted-foreground">Loading files...</p>
               ) : registerFiles.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
+                <div className="rounded-md border border-dashed border-border bg-muted/30 p-8 text-center">
                   <FileText className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">No files uploaded for this register.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {registerFiles.map((file) => (
-                    <div key={file.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
+                    <div key={file.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-4">
                       <div>
                         <p className="font-medium">{file.filename}</p>
                         <p className="text-xs text-muted-foreground">Uploaded {formatDate(file.uploaded_at)}</p>
@@ -315,7 +343,7 @@ export default function DashboardPage() {
 
               <div className="grid gap-4 py-2">
                 {entryForm.file_id && linkedFileName ? (
-                  <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
                     <div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
                       <Link2 className="h-4 w-4" />
                       Linked PDF
@@ -342,6 +370,22 @@ export default function DashboardPage() {
                   {errors.iesire_intrare && <p className="text-xs text-danger">{errors.iesire_intrare}</p>}
                 </div>
                 <div className="grid gap-2">
+                  <label className="text-sm font-medium">Nr/Data Emitent</label>
+                  <Input
+                    value={entryForm.nr_data_emitent}
+                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_emitent: event.target.value }))}
+                    placeholder="12/03/2024"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Nr/Data Destinatar</label>
+                  <Input
+                    value={entryForm.nr_data_destinator}
+                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_destinator: event.target.value }))}
+                    placeholder="12/03/2024"
+                  />
+                </div>
+                <div className="grid gap-2">
                   <label className="text-sm font-medium">Rezumat</label>
                   <Input
                     value={entryForm.rezumat}
@@ -353,10 +397,16 @@ export default function DashboardPage() {
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Repartizare departament</label>
                   <Input
+                    list="departments-list"
                     value={entryForm.repartizare_dpt}
                     onChange={(event) => setEntryForm((prev) => ({ ...prev, repartizare_dpt: event.target.value }))}
-                    placeholder="Secretariat"
+                    placeholder="Select or type a department"
                   />
+                  <datalist id="departments-list">
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.name} />
+                    ))}
+                  </datalist>
                   {errors.repartizare_dpt && <p className="text-xs text-danger">{errors.repartizare_dpt}</p>}
                 </div>
                 <div className="grid gap-2">
@@ -365,6 +415,14 @@ export default function DashboardPage() {
                     value={entryForm.mod_rezolvare}
                     onChange={(event) => setEntryForm((prev) => ({ ...prev, mod_rezolvare: event.target.value }))}
                     placeholder="In progress"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Nr pag & nr anexe</label>
+                  <Input
+                    value={entryForm.nr_pag_anexe}
+                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_pag_anexe: event.target.value }))}
+                    placeholder="3 pagini / 2 anexe"
                   />
                 </div>
               </div>
@@ -381,7 +439,7 @@ export default function DashboardPage() {
             </DialogContent>
           </Dialog>
 
-          <RegistryTable entries={entries} filters={filters} loading={loadingEntries} />
+          <RegistryTable entries={entries} filters={filters} loading={loadingEntries} onDownloadFile={handleDownloadFile} />
         </div>
 
         <div className="space-y-4">

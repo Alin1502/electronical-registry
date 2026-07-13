@@ -41,7 +41,7 @@ export function AdvancedFilterPanel({ filters, onChange }: AdvancedFilterPanelPr
             onChange={(event) => onChange({ ...filters, status: event.target.value })}
           />
         </div>
-        <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end">
           <Button
             variant="ghost"
             size="sm"

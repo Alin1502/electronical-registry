@@ -1,9 +1,11 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 class FileResponse(BaseModel):
     id: int
     filename: str
     register_type: str
+    uploaded_at: datetime
 
     class Config:
         from_attributes = True

@@ -7,10 +7,10 @@ export function AppFooter() {
       <div className="container grid gap-8 md:grid-cols-4">
         <div>
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 text-xs font-bold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 text-xs font-bold text-white">
               RG
             </div>
-            <span className="text-sm font-semibold">Premium Registratura</span>
+            <span className="text-sm font-semibold">Regix</span>
           </div>
           <p className="text-sm text-muted-foreground">Calm, secure, and modern registry workspace.</p>
         </div>
@@ -27,18 +27,18 @@ export function AppFooter() {
         <div>
           <h4 className="mb-3 text-sm font-semibold">Contact</h4>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>support@registratura.app</p>
-            <p>+40 755 000 111</p>
-            <p>Bucharest, Romania</p>
+            <p>support@regix.ro</p>
+            <p>+40 677 677 676</p>
+            <p>Bulevardul Metalurgiei, Romania</p>
           </div>
         </div>
 
         <div>
           <h4 className="mb-3 text-sm font-semibold">Social</h4>
           <div className="flex gap-2 text-muted-foreground">
-            <a href="#" className="rounded-lg border border-border p-2 hover:text-foreground"><Globe className="h-4 w-4" /></a>
-            <a href="#" className="rounded-lg border border-border p-2 hover:text-foreground"><MessageCircle className="h-4 w-4" /></a>
-            <a href="#" className="rounded-lg border border-border p-2 hover:text-foreground"><Mail className="h-4 w-4" /></a>
+            <a href="#" className="rounded-md border border-border p-2 hover:text-foreground"><Globe className="h-4 w-4" /></a>
+            <a href="#" className="rounded-md border border-border p-2 hover:text-foreground"><MessageCircle className="h-4 w-4" /></a>
+            <a href="#" className="rounded-md border border-border p-2 hover:text-foreground"><Mail className="h-4 w-4" /></a>
           </div>
         </div>
       </div>

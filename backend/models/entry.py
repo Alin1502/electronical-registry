@@ -26,3 +26,5 @@ class DocumentEntry(Base):
     nr_pag_anexe = Column(String)
 
     file_id = Column(Integer, ForeignKey("files.id"), nullable=True)
+    history = relationship("DocumentHistory", back_populates="entry", order_by="DocumentHistory.created_at",cascade="all, delete-orphan",
+)

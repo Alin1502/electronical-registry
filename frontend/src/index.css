@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -19,13 +19,13 @@
 		--border: 191 26% 86%;
 		--input: 191 26% 86%;
 		--ring: 194 55% 47%;
-		--success: 161 43% 42%;
-		--success-foreground: 165 100% 98%;
-		--warning: 35 91% 54%;
-		--warning-foreground: 32 62% 16%;
-		--danger: 0 66% 55%;
+		--success: 154 30% 38%;
+		--success-foreground: 154 100% 98%;
+		--warning: 37 38% 44%;
+		--warning-foreground: 36 32% 16%;
+		--danger: 355 34% 42%;
 		--danger-foreground: 0 0% 100%;
-		--radius: 1.25rem;
+		--radius: 0.625rem;
 	}
 
 	.dark {
@@ -42,6 +42,12 @@
 		--border: 199 24% 24%;
 		--input: 199 24% 24%;
 		--ring: 189 70% 52%;
+		--success: 154 28% 58%;
+		--success-foreground: 154 36% 12%;
+		--warning: 37 32% 58%;
+		--warning-foreground: 37 36% 12%;
+		--danger: 355 34% 62%;
+		--danger-foreground: 355 20% 12%;
 	}
 
 	* {
@@ -56,7 +62,7 @@
 
 	body {
 		@apply bg-background text-foreground antialiased;
-		font-family: "Inter", sans-serif;
+		font-family: "IBM Plex Sans", system-ui, sans-serif;
 		background-image:
 			radial-gradient(circle at top left, rgba(99, 205, 218, 0.18), transparent 32%),
 			radial-gradient(circle at 80% 5%, rgba(90, 157, 255, 0.14), transparent 28%),
@@ -66,7 +72,7 @@
 
 @layer components {
 	.panel {
-		@apply rounded-2xl bg-card/95 shadow-soft ring-1 ring-border/70 backdrop-blur;
+		@apply rounded-md bg-card/95 shadow-soft ring-1 ring-border/70 backdrop-blur;
 	}
 
 	.page-title {

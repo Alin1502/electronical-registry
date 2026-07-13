@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/authStore";
 import type {
   AdminStats,
   AuthResponse,
@@ -6,6 +7,7 @@ import type {
   NamedEntity,
   NextNumberResponse,
   UploadedFile,
+  HistoryEvent,
 } from "@/types/registry";
 
 const BASE = "http://localhost:8000";
@@ -201,4 +203,49 @@ export function deleteRole(token: string, id: number) {
     method: "DELETE",
     headers: authHeaders(token),
   });
+}
+export async function getEntryHistory(entryId: number): Promise<HistoryEvent[]> {
+  const res = await fetch(`${BASE}/entries/${entryId}/history`, {
+    headers: { Authorization: `Bearer ${useAuthStore.getState().token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch history");
+  return res.json();
+}
+
+export async function addHistoryEvent(entryId: number, status: string, note?: string) {
+  const res = await fetch(`${BASE}/entries/${entryId}/history`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${useAuthStore.getState().token}`,
+    },
+    body: JSON.stringify({ status, note }),
+  });
+  if (!res.ok) throw new Error("Failed to add history event");
+  return res.json();
+}
+
+export async function extractOrgChart(token: string, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE}/departments/extract-chart`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Failed to extract departments");
+  return res.json();
+}
+
+export async function createDepartmentsBulk(token: string, names: string[]) {
+  const res = await fetch(`${BASE}/departments/bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ names }),
+  });
+  if (!res.ok) throw new Error("Failed to create departments");
+  return res.json();
 }

@@ -12,7 +12,7 @@ import {
   getRoles,
   updateDepartment,
   updateRole,
-} from "@/api/client.ts";
+} from "@/api/client";
 import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuthStore } from "@/store/authStore.ts";
+import { useAuthStore } from "@/store/authStore";
 import type { AdminStats, NamedEntity } from "@/types/registry";
 import { formatBytes, formatDateTime } from "@/lib/utils";
-
+import { ChartUpload } from "@/components/registry/ChartUpload";
 function EntityManager({
   title,
   items,
@@ -71,7 +71,7 @@ function EntityManager({
 
         <div className="space-y-2">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+            <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
               {editingId === item.id ? (
                 <Input defaultValue={item.name} onBlur={(event) => onUpdate(item.id, event.target.value.trim())} />
               ) : (
@@ -179,7 +179,7 @@ export default function AdminPage() {
               ) : (
                 <div className="space-y-2">
                   {activity.map((item, index) => (
-                    <div key={`${item.nr_inregistrare}-${index}`} className="rounded-xl border border-border p-4">
+                    <div key={`${item.nr_inregistrare}-${index}`} className="rounded-md border border-border p-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge>{item.register_type}</Badge>
                         <span className="text-sm font-medium">{item.nr_inregistrare}</span>
@@ -196,6 +196,8 @@ export default function AdminPage() {
 
         <TabsContent value="organization">
           <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-6">
+              <ChartUpload onImported={loadAll} />
             <EntityManager
               title="Departments"
               items={departments}
@@ -241,6 +243,7 @@ export default function AdminPage() {
                 await loadAll();
               }}
             />
+            </div>
           </div>
         </TabsContent>
       </Tabs>

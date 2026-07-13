@@ -5,10 +5,11 @@ from sqlalchemy import func
 from core.database import get_db
 from core.security import get_current_user
 from models.entry import DocumentEntry
+from models.history import DocumentHistory
 from schemas.entry import EntryCreate, EntryResponse
 from typing import List
 import openpyxl
-from openpyxl.styles import Border, Side
+from openpyxl.styles import Border, Side, Font, Alignment
 from io import BytesIO
 from datetime import date
 router = APIRouter()
@@ -38,6 +39,15 @@ def create_entry(
 ):
     db_entry = DocumentEntry(**entry.model_dump(), user_id=current_user["id"])
     db.add(db_entry)
+    db.flush()  # assigns db_entry.id without ending the transaction
+
+    history_event = DocumentHistory(
+        entry_id=db_entry.id,
+        user_id=current_user["id"],
+        status="registered",
+    )
+    db.add(history_event)
+
     db.commit()
     db.refresh(db_entry)
     return db_entry
@@ -68,18 +78,48 @@ def download_excel(
     ws = wb.active
     ws.title = register_type[:31]  # Excel tab name limit
 
-    # Header row
-    #ws.append(TITLE)
-    ws.append(COLUMNS)
+    num_cols = len(COLUMNS)
+    mid = num_cols // 2
 
-    # Data rows
-    for entry in entries:
-        ws.append([getattr(entry, field) for field in FIELD_MAP])
+    thin = Side(style="thin", color="000000")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    # Auto-width columns
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or "")) for cell in col)
-        ws.column_dimensions[col[0].column_letter].width = max_len + 4
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=mid)
+    ws.merge_cells(start_row=1, start_column=mid + 1, end_row=1, end_column=num_cols)
+
+
+    company_cell = ws.cell(row=1, column=1, value=current_user["company_name"])
+    company_cell.font = Font(size=16, bold=True)
+    company_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    register_cell = ws.cell(row=1, column=mid + 1, value=register_type)
+    register_cell.font = Font(size=16, bold=True)
+    register_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    ws.row_dimensions[1].height = 30
+    ws.row_dimensions[2].height = 8
+
+    #row 3 - headers
+    for col_idx, header in enumerate(COLUMNS, start=1):
+        cell = ws.cell(row=3, column=col_idx, value=header)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+
+    #row 4 and below, data
+    for row_offset, entry in enumerate(entries, start=4):
+        for col_idx, field in enumerate(FIELD_MAP, start=1):
+            cell = ws.cell(row=row_offset, column=col_idx, value=getattr(entry, field))
+            cell.border = border
+
+    # auto-width columns, based on headers + data only (skip title row)
+    for col_idx in range(1, num_cols + 1):
+        col_letter = ws.cell(row=3, column=col_idx).column_letter
+        max_len = max(
+            (len(str(ws.cell(row=r, column=col_idx).value or "")) for r in range(3, ws.max_row + 1)),
+            default=10,
+        )
+        ws.column_dimensions[col_letter].width = max_len + 4
 
     buffer = BytesIO()
     wb.save(buffer)

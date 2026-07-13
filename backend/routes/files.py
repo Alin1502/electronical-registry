@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
-from botocore.exceptions import ClientError
-from core.database import get_db
-from core.security import get_current_user
-from models.file import UploadedFile
-from schemas.file import FileResponse, DownloadResponse, RemoveResponse
-from services.s3 import upload_file_to_s3, generate_download_url, delete_file_from_s3, download_file_from_s3
-from typing import List
-from models.entry import DocumentEntry
+import os
+import uuid
 import zipfile
 from io import BytesIO
+from typing import List
+
+from botocore.exceptions import ClientError
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+
+from core.database import get_db
+from core.security import get_current_user
+from models.entry import DocumentEntry
+from models.file import UploadedFile
+from models.history import DocumentHistory
+from schemas.file import DownloadResponse, FileResponse, RemoveResponse
+from services.s3 import delete_file_from_s3, download_file_from_s3, generate_download_url, upload_file_to_s3
+
 router = APIRouter()
 
 @router.post("/upload")
@@ -24,7 +30,11 @@ async def upload_pdf(
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     safe_folder = register_type.replace("/", "-").replace(" ", "_")
-    s3_key = f"user_{current_user['id']}/{safe_folder}/{file.filename}"
+    filename = file.filename or "upload.pdf"
+    name, ext = os.path.splitext(filename)
+    safe_name = name.replace("/", "_").replace(" ", "_")
+    safe_ext = ext or ".pdf"
+    s3_key = f"user_{current_user['id']}/{safe_folder}/{safe_name}-{uuid.uuid4().hex[:12]}{safe_ext}"
 
     try:
         upload_file_to_s3(file.file, s3_key)
@@ -32,7 +42,7 @@ async def upload_pdf(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     db_file = UploadedFile(
-        filename=file.filename,
+        filename=filename,
         s3_key=s3_key,
         register_type=register_type,
         user_id=current_user['id']
@@ -76,11 +86,19 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
     try:
         delete_file_from_s3(file_record.s3_key)
     except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code") if hasattr(e, "response") else None
+        if error_code not in {"NoSuchKey", "404"}:
+            raise HTTPException(status_code=500, detail=f"Could not delete file {str(e)}")
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not delete file {str(e)}")
-    db.query(DocumentEntry).filter(DocumentEntry.file_id == file_id).delete()
+
+    entries_to_delete = db.query(DocumentEntry).filter(DocumentEntry.file_id == file_id).all()
+    for entry in entries_to_delete:
+        db.query(DocumentHistory).filter(DocumentHistory.entry_id == entry.id).delete(synchronize_session=False)
+        db.delete(entry)
+
     db.delete(file_record)
     db.commit()
-
 
     return {"status": "success", "message":"File was deleted successfully from the registry"}
 

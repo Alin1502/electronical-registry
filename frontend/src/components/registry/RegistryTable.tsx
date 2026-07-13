@@ -15,6 +15,7 @@ interface RegistryTableProps {
   entries: DocumentEntry[];
   filters: RegistryFilters;
   loading?: boolean;
+  onDownloadFile:(fileId:number) => void;
 }
 
 const PAGE_SIZE = 7;
@@ -23,7 +24,7 @@ function containsText(value: string, query: string) {
   return value.toLowerCase().includes(query.toLowerCase());
 }
 
-export function RegistryTable({ entries, filters, loading = false }: RegistryTableProps) {
+export function RegistryTable({ entries, filters, loading = false, onDownloadFile }: RegistryTableProps) {
   const [sortField, setSortField] = useState<SortField>("nr_inregistrare");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [page, setPage] = useState(1);
@@ -82,14 +83,14 @@ export function RegistryTable({ entries, filters, loading = false }: RegistryTab
             ))}
           </div>
         ) : current.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 p-10 text-center">
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/40 p-10 text-center">
             <FileText className="mb-3 h-8 w-8 text-muted-foreground" />
             <h4 className="text-base font-semibold">No records yet</h4>
             <p className="mt-1 text-sm text-muted-foreground">Upload a PDF and create the first registry entry for this tab.</p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-2xl border border-border">
+            <div className="overflow-x-auto rounded-md border border-border">
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
@@ -99,6 +100,7 @@ export function RegistryTable({ entries, filters, loading = false }: RegistryTab
                       { field: "rezumat", label: "Rezumat" },
                       { field: "repartizare_dpt", label: "Departament" },
                       { field: "mod_rezolvare", label: "Rezolvare" },
+                      { field: "file_id", label: "PDF"},
                     ].map((col) => (
                       <th key={col.field} className="px-4 py-3 text-left font-medium">
                         {col.field === "rezumat" ? (
@@ -125,6 +127,16 @@ export function RegistryTable({ entries, filters, loading = false }: RegistryTab
                       <td className="px-4 py-3">
                         <div className="text-xs text-muted-foreground">{entry.mod_rezolvare || "-"}</div>
                         <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(new Date())}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.file_id ? (
+                          <Button size="sm" variant="outline" onClick={() => onDownloadFile(entry.file_id!)}>
+                            <FileText className="mr-1 h-4 w-4" />
+                            View
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No file</span>
+                        )}
                       </td>
                     </tr>
                   ))}

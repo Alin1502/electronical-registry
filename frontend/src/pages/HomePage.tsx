@@ -15,26 +15,26 @@ const trustStats = [
 const services = [
   {
     title: "Electronic Registry",
-    text: "Structured intake, outbound tracking, and complete document lifecycle visibility.",
+    text: "Record incoming and outgoing documents, assign the register, and keep the PDF linked.",
     icon: Workflow,
   },
   {
     title: "Secure Operations",
-    text: "Access control, audit-friendly actions, and protected document workflows.",
+    text: "Restrict access, log actions, and preserve the audit trail for each record.",
     icon: Shield,
   },
   {
     title: "Effortless Automation",
-    text: "Smart defaults, automatic numbering, and exports for reporting and compliance.",
+    text: "Generate numbers, apply defaults, and export the data when needed.",
     icon: Sparkles,
   },
 ];
 
 const timeline = [
-  { title: "01. Intake", text: "Upload PDFs and assign registry categories with auto-generated IDs." },
-  { title: "02. Routing", text: "Route to departments and assign handling status with visibility." },
-  { title: "03. Resolution", text: "Track outcomes and keep searchable history in one quiet workspace." },
-  { title: "04. Reporting", text: "Generate exports, monitor KPIs, and run periodic governance checks." },
+  { title: "01. Intake", text: "Upload the PDF, choose the register, and save the entry." },
+  { title: "02. Routing", text: "Select the department and set the handling status." },
+  { title: "03. Resolution", text: "Enter the outcome and keep the history attached to the record." },
+  { title: "04. Reporting", text: "Export Excel or PDF files when the register needs review." },
 ];
 
 export default function HomePage() {
@@ -112,7 +112,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container pb-16">
+      <section id="services" className="container pb-16">
         <p className="section-subtitle">Services</p>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {services.map((service, index) => (
@@ -135,7 +135,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container pb-16">
+      <section id="process" className="container pb-16">
         <p className="section-subtitle">Process Timeline</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {timeline.map((step) => (
@@ -149,7 +149,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container pb-8">
+      <section id="faq" className="container pb-8">
         <p className="section-subtitle">FAQ</p>
         <Card className="mt-4">
           <CardContent className="p-6">
