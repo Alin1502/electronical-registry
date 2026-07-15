@@ -126,7 +126,7 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-xs text-muted-foreground">{entry.mod_rezolvare || "-"}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(new Date())}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(entry.created_at)}</div>
                       </td>
                       <td className="px-4 py-3">
                         {entry.file_id ? (

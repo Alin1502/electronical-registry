@@ -42,6 +42,8 @@ export default function LoginPage() {
         if (result.message) {
           toast.success("Account created. Please sign in.");
           setIsRegister(false);
+          setForm({ username: "", password: "", company_name: "" });
+          setErrors({});
           return;
         }
       } else {

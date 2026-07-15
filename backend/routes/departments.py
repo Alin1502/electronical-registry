@@ -1,8 +1,6 @@
-import cv2
-import pytesseract
-import numpy as np
-from PIL import Image
-import io
+import boto3
+import os
+from services.s3 import upload_chart_to_s3
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -11,7 +9,12 @@ from core.database import get_db
 from core.security import get_current_user
 from models.department import Department
 from schemas.department import DepartmentCreate, DepartmentResponse
-
+from services.s3 import upload_chart_to_s3, BUCKET_NAME
+import easyocr
+import numpy as np
+import cv2
+import re
+import unicodedata
 router = APIRouter()
 
 @router.post("/", response_model=DepartmentResponse)
@@ -45,66 +48,69 @@ def delete_department(dept_id: int, db: Session = Depends(get_db), current_user:
     db.commit()
     return {"status": "success", "message": "Department deleted"}
 
+textract_client = boto3.client(
+    "textract",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_KEY"),
+    region_name=os.getenv("AWS_REGION"),
+)
+"""
+def extract_text_via_textract(s3_key: str, bucket_name: str) -> list[str]:
+    response = textract_client.detect_document_text(
+        Document={"S3Object": {"Bucket": bucket_name, "Name": s3_key}}
+    )
+
+    lines = [
+        block["Text"].strip()
+        for block in response["Blocks"]
+        if block["BlockType"] == "LINE" and block.get("Text")
+    ]
+
+    # de-duplicate, preserve order
+    seen = set()
+    unique = []
+    for line in lines:
+        if line.lower() not in seen:
+            seen.add(line.lower())
+            unique.append(line)
+    return unique
+"""
+"""
+@router.post("/extract-chart")
+async def extract_chart(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    contents = await file.read()
+
+    try:
+        s3_key = upload_chart_to_s3(contents, current_user["id"])
+        candidates = extract_text_via_textract(s3_key, BUCKET_NAME)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not process chart: {str(e)}")
+
+    return {"candidates": candidates}
+"""
+reader = easyocr.Reader(['ro', 'en'])
+def remove_diacritics(text):
+    return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
 def extract_boxes_with_text(image_bytes: bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Otsu picks the threshold automatically instead of a guessed fixed value
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    raw_text_list = reader.readtext(img, detail=0, paragraph=True)
 
-    # RETR_CCOMP gives hierarchy: outer borders/lines are one level,
-    # box interiors are "holes" nested one level inside them
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-
-    img_h, img_w = gray.shape
-    img_area = img_w * img_h
-    min_area = img_area * 0.003
-    max_area = img_area * 0.35
-
-    boxes = []
-    if hierarchy is not None:
-        for i, cnt in enumerate(contours):
-            parent = hierarchy[0][i][3]
-            if parent == -1:
-                continue  # skip top-level shapes (borders/lines), we want holes only
-
-            x, y, w, h = cv2.boundingRect(cnt)
-            area = w * h
-            if area < min_area or area > max_area:
-                continue
-            aspect = w / h
-            if aspect < 0.5 or aspect > 6:
-                continue
-            boxes.append((x, y, w, h))
-
-    print(f"[extract] total contours: {len(contours)}, valid box candidates: {len(boxes)}")
-
-    boxes.sort(key=lambda b: (round(b[1] / 60), b[0]))
-
-    results = []
-    for (x, y, w, h) in boxes:
-        pad = 6
-        y1, y2 = max(0, y - pad), min(img.shape[0], y + h + pad)
-        x1, x2 = max(0, x - pad), min(img.shape[1], x + w + pad)
-        crop = img[y1:y2, x1:x2]
-        if crop.size == 0:
-            continue
-        crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        _, crop_thresh = cv2.threshold(crop_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        pil_img = Image.fromarray(crop_thresh)
-        text = pytesseract.image_to_string(pil_img, config="--psm 6").strip()
-        text = " ".join(text.split())
-        if text and len(text) > 1:
-            results.append(text)
-
+    unique_roles = []
     seen = set()
-    unique = []
-    for t in results:
-        if t.lower() not in seen:
-            seen.add(t.lower())
-            unique.append(t)
-    return unique
+    for text in raw_text_list:
+        clean_text = " ".join(text.split()).strip()
+        no_accents = remove_diacritics(clean_text)
+        normalized_text = re.sub(r'[^\w\s]', '', no_accents).lower()
+        if len(normalized_text) > 2 and normalized_text not in seen:
+            seen.add(normalized_text)
+            unique_roles.append(clean_text)
+            
+    return unique_roles
 
 
 @router.post("/extract-chart")

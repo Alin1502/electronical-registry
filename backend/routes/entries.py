@@ -52,7 +52,32 @@ def create_entry(
     db.refresh(db_entry)
     return db_entry
 
-@router.get("/{register_type}", response_model=List[EntryResponse])
+@router.get("/next-nr/{register_type:path}")
+def get_next_nr(
+    register_type: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    today = date.today()
+    date_prefix = today.strftime("%Y/%m/%d")
+    date_compact = today.strftime("%Y%m%d")
+
+    # count how many entries exist for this user + register + today
+    count_today = db.query(DocumentEntry).filter(
+        DocumentEntry.user_id == current_user["id"],
+        DocumentEntry.register_type == register_type,
+        func.date(DocumentEntry.created_at) == today
+    ).count()
+
+    next_count = count_today + 1
+    count_str = str(next_count).zfill(3)  # 001, 002, etc.
+
+    return {
+        "nr_inregistrare": f"{date_prefix}/{count_str}",
+        "cod": f"{date_compact}{count_str}"
+    }
+
+@router.get("/{register_type:path}", response_model=List[EntryResponse])
 def get_entries(
     register_type: str,
     db: Session = Depends(get_db),
@@ -63,7 +88,7 @@ def get_entries(
         DocumentEntry.register_type == register_type
     ).all()
 
-@router.get("/{register_type}/excel")
+@router.get("/{register_type:path}/excel")
 def download_excel(
     register_type: str,
     db: Session = Depends(get_db),
@@ -131,28 +156,3 @@ def download_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
-
-@router.get("/next-nr/{register_type}")
-def get_next_nr(
-    register_type: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
-):
-    today = date.today()
-    date_prefix = today.strftime("%Y/%m/%d")
-    date_compact = today.strftime("%Y%m%d")
-
-    # count how many entries exist for this user + register + today
-    count_today = db.query(DocumentEntry).filter(
-        DocumentEntry.user_id == current_user["id"],
-        DocumentEntry.register_type == register_type,
-        func.date(DocumentEntry.created_at) == today
-    ).count()
-
-    next_count = count_today + 1
-    count_str = str(next_count).zfill(3)  # 001, 002, etc.
-
-    return {
-        "nr_inregistrare": f"{date_prefix}/{count_str}",
-        "cod": f"{date_compact}{count_str}"
-    }

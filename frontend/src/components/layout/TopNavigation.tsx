@@ -44,7 +44,7 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
       <div className="container flex h-20 items-center gap-4">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-semibold text-white shadow-soft">
-            RG
+            <img src="/REGIX_LOGO.png" alt="Regix Logo" />
           </div>
           <div>
             <p className="text-sm font-semibold">Regix</p>
@@ -79,8 +79,9 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
           {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
+        {/* notification */}
         {token ? (
-          <Button variant="ghost" size="icon" className="rounded-md">
+          <Button variant="ghost" size="icon" className="rounded-md"> 
             <Bell className="h-5 w-5" />
           </Button>
         ) : null}

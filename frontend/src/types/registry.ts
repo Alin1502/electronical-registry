@@ -43,6 +43,7 @@ export interface DocumentEntry {
   id: number;
   user_id: number;
   register_type: string;
+  created_at: string;
   nr_inregistrare: string;
   cod: string;
   iesire_intrare: string;

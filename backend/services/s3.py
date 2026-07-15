@@ -1,6 +1,6 @@
 import os
 import boto3
-
+import uuid
 s3_client = boto3.client(
     's3',
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
@@ -25,3 +25,13 @@ def delete_file_from_s3(s3_key:str):
 def download_file_from_s3(s3_key: str) -> bytes:
     response = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
     return response["Body"].read()
+
+def upload_chart_to_s3(file_bytes: bytes, user_id: int, content_type: str = "image/png") -> str:
+    key = f"org-charts/{user_id}/{uuid.uuid4()}.png"
+    s3_client.put_object(
+        Bucket=BUCKET_NAME,
+        Key=key,
+        Body=file_bytes,
+        ContentType=content_type,
+    )
+    return key
