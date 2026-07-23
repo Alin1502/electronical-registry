@@ -32,6 +32,8 @@ import { useAuthStore } from "@/store/authStore";
 import type { AdminStats, NamedEntity } from "@/types/registry";
 import { formatBytes, formatDateTime } from "@/lib/utils";
 import { ChartUpload } from "@/components/registry/ChartUpload";
+import { InviteUserForm } from "@/components/registry/InviteUserForm";
+
 function EntityManager({
   title,
   items,
@@ -195,6 +197,7 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="organization">
+          <InviteUserForm roles={roles} />
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <ChartUpload onImported={loadAll} />

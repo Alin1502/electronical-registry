@@ -249,3 +249,33 @@ export async function createDepartmentsBulk(token: string, names: string[]) {
   if (!res.ok) throw new Error("Failed to create departments");
   return res.json();
 }
+
+
+export async function createInvite(token: string, email: string, roleId?: number) {
+  const res = await fetch(`${BASE}/invites/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email, role_id: roleId ?? null }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to send invite");
+  }
+  return res.json();
+}
+
+export async function acceptInvite(payload: { token: string; username: string; password: string }) {
+  const res = await fetch(`${BASE}/invites/accept`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to accept invite");
+  }
+  return res.json();
+}

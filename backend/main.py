@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.database import Base, engine
 import models.user, models.file, models.entry  
-from routes import auth, files, entries, roles, departments, admin
+from routes import auth, files, entries, roles, departments, admin, invites
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,3 +22,4 @@ app.include_router(entries.router, prefix="/entries", tags=["entries"])
 app.include_router(roles.router, prefix="/roles", tags=["roles"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
 app.include_router(departments.router, prefix="/departments", tags=["departments"])
+app.include_router(invites.router, prefix="/invites", tags=["invites"])

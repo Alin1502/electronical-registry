@@ -14,4 +14,4 @@ class UploadedFile(Base):
     register_type = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    owner = relationship("User", back_populates="files")
+    owner = relationship("User")

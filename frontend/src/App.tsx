@@ -7,6 +7,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import AdminPage from "@/pages/AdminPage";
 import { useAuthStore } from "@/store/authStore";
 import { isTokenValid } from "@/lib/auth";
+import AcceptInvitePage from "@/pages/AcceptInvitePage";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { token } = useAuthStore();
@@ -20,6 +21,7 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route
           path="/dashboard"
           element={
