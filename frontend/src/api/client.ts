@@ -10,7 +10,7 @@ import type {
   HistoryEvent,
 } from "@/types/registry";
 
-const BASE = "http://localhost:8000";
+const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 const authHeaders = (token: string): HeadersInit => ({
   Authorization: `Bearer ${token}`,

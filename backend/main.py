@@ -1,16 +1,20 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.database import Base, engine
-import models.user, models.file, models.entry  
+import models.user, models.file, models.entry
 from routes import auth, files, entries, roles, departments, admin, invites
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost").split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
