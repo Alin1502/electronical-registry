@@ -14,9 +14,10 @@ from core.security import get_current_user
 from models.entry import DocumentEntry
 from models.file import UploadedFile
 from models.history import DocumentHistory
+from models.user import User
 from schemas.file import DownloadResponse, FileResponse, RemoveResponse
 from services.s3 import delete_file_from_s3, download_file_from_s3, generate_download_url, upload_file_to_s3
-
+from core.permissions import require_write_access
 router = APIRouter()
 
 @router.post("/upload")
@@ -26,6 +27,7 @@ async def upload_pdf(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
+    require_write_access(current_user)
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -57,14 +59,24 @@ async def upload_pdf(
     }
 @router.get("/", response_model=List[FileResponse])
 def list_files(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    return db.query(UploadedFile).filter(UploadedFile.user_id == current_user['id']).all()
+    return (
+        db.query(UploadedFile)
+        .join(User, User.id == UploadedFile.user_id)
+        .filter(User.company_id == current_user['company_id'])
+        .all()
+    )
 
 @router.get("/download/{file_id}", response_model=DownloadResponse)
 def download_file(file_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    file_record = db.query(UploadedFile).filter(
-        UploadedFile.id == file_id,
-        UploadedFile.user_id == current_user['id']
-    ).first()
+    file_record = (
+        db.query(UploadedFile)
+        .join(User, User.id == UploadedFile.user_id)
+        .filter(
+            UploadedFile.id == file_id,
+            User.company_id == current_user['company_id']
+        )
+        .first()
+    )
     if not file_record:
         raise HTTPException(status_code=404, detail="File not found or unauthorized")
 
@@ -76,10 +88,16 @@ def download_file(file_id: int, db: Session = Depends(get_db), current_user: dic
     
 @router.delete("/delete/{file_id}", response_model=RemoveResponse)
 def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Depends(get_current_user)):
-    file_record = db.query(UploadedFile).filter(
-        UploadedFile.id == file_id,
-        UploadedFile.user_id == current_user['id']
-    ).first()
+    require_write_access(current_user)
+    file_record = (
+        db.query(UploadedFile)
+        .join(User, User.id == UploadedFile.user_id)
+        .filter(
+            UploadedFile.id == file_id,
+            User.company_id == current_user['company_id']
+        )
+        .first()
+    )
     if not file_record:
         raise HTTPException(status_code=404, detail="File not found or unauthorized")
 
@@ -104,10 +122,15 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
 
 @router.get("/download-all/{register_type}")
 def download_all_files(register_type: str,db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
-    files = db.query(UploadedFile).filter(
-        UploadedFile.user_id == current_user["id"],
-        UploadedFile.register_type == register_type
-    ).all()
+    files = (
+        db.query(UploadedFile)
+        .join(User, User.id == UploadedFile.user_id)
+        .filter(
+            User.company_id == current_user["company_id"],
+            UploadedFile.register_type == register_type,
+        )
+        .all()
+    )
 
     if not files:
         raise HTTPException(status_code=404, detail="No files found for this register")

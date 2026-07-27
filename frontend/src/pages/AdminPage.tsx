@@ -17,6 +17,8 @@ import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RoleManager } from "@/components/registry/RoleManager";
+import type { RoleEntity } from "@/types/registry"; 
 import {
   Dialog,
   DialogContent,
@@ -49,7 +51,6 @@ function EntityManager({
 }) {
   const [value, setValue] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -109,12 +110,12 @@ function EntityManager({
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
+  const isAdmin = Boolean(user?.is_owner || user?.permission_level === "full_access");
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [departments, setDepartments] = useState<NamedEntity[]>([]);
-  const [roles, setRoles] = useState<NamedEntity[]>([]);
-
+  const [roles, setRoles] = useState<RoleEntity[]>([]);
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -127,15 +128,21 @@ export default function AdminPage() {
     if (!token) return;
     try {
       const [statsData, deptData, roleData] = await Promise.all([
-        getAdminStats(token),
+        isAdmin ? getAdminStats(token) : Promise.resolve(null),
         getDepartments(token),
         getRoles(token),
       ]);
-      setStats(statsData);
+      if (statsData) {
+        setStats(statsData);
+      } else {
+        setStats({ total_documents: 0, total_storage_bytes: 0, recent_activity: [] });
+      }
       setDepartments(deptData);
       setRoles(roleData);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to load admin data");
+      if (error instanceof Error && error.message !== "Admin access required") {
+        toast.error(error instanceof Error ? error.message : "Unable to load admin data");
+      }
     }
   }
 
@@ -163,6 +170,16 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </section>
+
+      {!isAdmin ? (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground">
+              You have read-only access, so some admin management actions are hidden.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Tabs defaultValue="activity">
         <TabsList>
@@ -197,10 +214,10 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="organization">
-          <InviteUserForm roles={roles} />
+          {isAdmin ? <InviteUserForm roles={roles} /> : null}
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
-              <ChartUpload onImported={loadAll} />
+              {isAdmin ? <ChartUpload onImported={loadAll} /> : null}
             <EntityManager
               title="Departments"
               items={departments}
@@ -224,19 +241,12 @@ export default function AdminPage() {
               }}
             />
 
-            <EntityManager
-              title="Roles"
+            <RoleManager
               items={roles}
-              onCreate={async (name) => {
+              onCreate={async (name, permissionLevel) => {
                 if (!token) return;
-                await createRole(token, name);
+                await createRole(token, name, permissionLevel);
                 toast.success("Role added");
-                await loadAll();
-              }}
-              onUpdate={async (id, name) => {
-                if (!token || !name) return;
-                await updateRole(token, id, name);
-                toast.success("Role updated");
                 await loadAll();
               }}
               onDelete={async (id) => {

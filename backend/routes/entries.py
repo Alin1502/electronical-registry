@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from core.permissions import require_write_access
 from core.database import get_db
 from core.security import get_current_user
 from models.entry import DocumentEntry
 from models.history import DocumentHistory
+from models.user import User
 from schemas.entry import EntryCreate, EntryResponse
 from typing import List
 import openpyxl
@@ -37,6 +39,7 @@ def create_entry(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
+    require_write_access(current_user)
     db_entry = DocumentEntry(**entry.model_dump(), user_id=current_user["id"])
     db.add(db_entry)
     db.flush()  # assigns db_entry.id without ending the transaction
@@ -76,28 +79,21 @@ def get_next_nr(
         "nr_inregistrare": f"{date_prefix}/{count_str}",
         "cod": f"{date_compact}{count_str}"
     }
-
-@router.get("/{register_type:path}", response_model=List[EntryResponse])
-def get_entries(
-    register_type: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
-):
-    return db.query(DocumentEntry).filter(
-        DocumentEntry.user_id == current_user["id"],
-        DocumentEntry.register_type == register_type
-    ).all()
-
 @router.get("/{register_type:path}/excel")
 def download_excel(
     register_type: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    entries = db.query(DocumentEntry).filter(
-        DocumentEntry.user_id == current_user["id"],
-        DocumentEntry.register_type == register_type
-    ).all()
+    entries = (
+        db.query(DocumentEntry)
+        .join(User, User.id == DocumentEntry.user_id)
+        .filter(
+            User.company_id == current_user["company_id"],
+            DocumentEntry.register_type == register_type,
+        )
+        .all()
+    )
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -148,11 +144,27 @@ def download_excel(
 
     buffer = BytesIO()
     wb.save(buffer)
-    buffer.seek(0)
+    excel_bytes = buffer.getvalue()
 
     filename = f"{register_type.replace('/', '-')}.xlsx"
-    return StreamingResponse(
-        buffer,
+    return Response(
+        content=excel_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@router.get("/{register_type:path}", response_model=List[EntryResponse])
+def get_entries(
+    register_type: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    return (
+        db.query(DocumentEntry)
+        .join(User, User.id == DocumentEntry.user_id)
+        .filter(
+            User.company_id == current_user["company_id"],
+            DocumentEntry.register_type == register_type,
+        )
+        .all()
     )

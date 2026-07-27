@@ -9,7 +9,7 @@ import type {
   UploadedFile,
   HistoryEvent,
 } from "@/types/registry";
-
+import type { RoleEntity } from "@/types/registry";
 const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 const authHeaders = (token: string): HeadersInit => ({
@@ -107,8 +107,10 @@ export async function downloadExcel(token: string, registerType: string) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `${registerType.replace("/", "-")}.xlsx`;
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export async function downloadAllPdfs(token: string, registerType: string) {
@@ -173,18 +175,17 @@ export function deleteDepartment(token: string, id: number) {
 }
 
 export function getRoles(token: string) {
-  return jsonRequest<NamedEntity[]>(`${BASE}/roles/`, { headers: authHeaders(token) });
+  return jsonRequest<RoleEntity[]>(`${BASE}/roles/`, { headers: authHeaders(token) });
 }
 
-export function createRole(token: string, name: string) {
-  return jsonRequest<NamedEntity>(`${BASE}/roles/`, {
+export async function createRole(token: string, name: string, permissionLevel: string) {
+  const res = await fetch(`${BASE}/roles/`, {
     method: "POST",
-    headers: {
-      ...authHeaders(token),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name }),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name, permission_level: permissionLevel }),
   });
+  if (!res.ok) throw new Error("Failed to create role");
+  return res.json();
 }
 
 export function updateRole(token: string, id: number, name: string) {

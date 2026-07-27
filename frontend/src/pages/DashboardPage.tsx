@@ -78,6 +78,7 @@ const initialForm: EntryPayload = {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
+  const isReadOnlyUser = user?.permission_level === "read";
 
   const [activeRegister, setActiveRegister] = useState<string>(REGISTERS[0]);
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
@@ -163,6 +164,10 @@ export default function DashboardPage() {
 
   async function handleCreateEntry() {
     if (!token) return;
+    if (isReadOnlyUser) {
+      toast.error("Read-only users cannot create entries.");
+      return;
+    }
     if (!validateEntry(entryForm)) return;
 
     try {
@@ -186,6 +191,10 @@ export default function DashboardPage() {
 
   async function handleUploadFile() {
     if (!token || !selectedFile) return;
+    if (isReadOnlyUser) {
+      toast.error("Read-only users cannot upload PDFs.");
+      return;
+    }
     setUploading(true);
     try {
       const uploaded = await uploadFile(token, selectedFile, activeRegister);
@@ -280,12 +289,18 @@ export default function DashboardPage() {
                 Uploading a PDF will immediately ask for entry details (nr, cod, rezumat, etc.) in the next step.
               </p>
               <div className="mb-4 flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/20 p-4 md:flex-row md:items-center">
-                <Input type="file" accept="application/pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
-                <Button disabled={!selectedFile || uploading} onClick={handleUploadFile}>
+                <Input
+                  type="file"
+                  accept="application/pdf"
+                  disabled={isReadOnlyUser}
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                />
+                <Button disabled={!selectedFile || uploading || isReadOnlyUser} onClick={handleUploadFile}>
                   <UploadCloud className="mr-2 h-4 w-4" />
                   {uploading ? "Uploading..." : "Upload PDF"}
                 </Button>
               </div>
+              {isReadOnlyUser ? <p className="mb-4 text-sm text-muted-foreground">Read-only users cannot upload or create entries.</p> : null}
 
               {loadingFiles ? (
                 <p className="text-sm text-muted-foreground">Loading files...</p>
@@ -431,7 +446,7 @@ export default function DashboardPage() {
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button onClick={handleCreateEntry}>
+                <Button onClick={handleCreateEntry} disabled={isReadOnlyUser}>
                   <FilePlus2 className="mr-2 h-4 w-4" />
                   Save Entry
                 </Button>

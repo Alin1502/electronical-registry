@@ -21,6 +21,8 @@ export interface UserClaims {
   sub: string;
   id: number;
   company_name: string;
+  is_owner: boolean;
+  permission_level: string;
   exp: number;
 }
 
@@ -89,4 +91,8 @@ export interface AdminStats {
 export interface NamedEntity {
   id: number;
   name: string;
+}
+
+export interface RoleEntity extends NamedEntity {
+  permission_level: "full_access" | "read_write" | "read";
 }

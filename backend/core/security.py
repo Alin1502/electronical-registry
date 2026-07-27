@@ -24,21 +24,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Security(securi
     token = credentials.credentials
     try:
         payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=["HS256"])
-        username: str = payload.get("sub")
-        user_id: int = payload.get("id")
-        company_id: int = payload.get("company_id")
-        is_owner: bool = payload.get("is_owner", False)
-        role_id = payload.get("role_id")
+        username = payload.get("sub")
+        user_id = payload.get("id")
+        company_id = payload.get("company_id")
+        company_name = payload.get("company_name")
+        is_owner = payload.get("is_owner", False)
+        permission_level = payload.get("permission_level", "read")
         if username is None or user_id is None or company_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         return {
             "username": username,
             "id": user_id,
             "company_id": company_id,
+            "company_name": company_name,
             "is_owner": is_owner,
-            "role_id": role_id,
+            "permission_level": permission_level,
         }
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
-    
 

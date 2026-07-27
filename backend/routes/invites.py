@@ -4,13 +4,14 @@ import secrets
 from datetime import datetime, timedelta
 from pydantic import BaseModel, EmailStr
 
+from models.role import Role
 from core.database import get_db
 from core.security import get_current_user, hash_password, create_access_token
 from models.invite import Invite
 from models.user import User
 from models.company import Company
 from services.email import send_invite_email
-
+from core.permissions import require_admin_access
 router = APIRouter()
 
 class InviteCreate(BaseModel):
@@ -29,6 +30,7 @@ def create_invite(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
+    require_admin_access(current_user)
     if not current_user["is_owner"]:
         raise HTTPException(status_code=403, detail="Only the company owner can send invites")
 
@@ -79,12 +81,18 @@ def accept_invite(payload: InviteAccept, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
+    permission_level = "read"
+    if invite.role_id:
+        role = db.query(Role).filter(Role.id == invite.role_id).first()
+        if role:
+            permission_level = role.permission_level
+
     token = create_access_token(data={
         "sub": user.username,
         "id": user.id,
         "company_id": user.company_id,
         "company_name": company.name,
         "is_owner": user.is_owner,
-        "role_id": user.role_id,
+        "permission_level": permission_level,
     })
     return {"access_token": token, "token_type": "bearer"}

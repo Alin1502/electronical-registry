@@ -5,11 +5,12 @@ from core.database import get_db
 from core.security import get_current_user
 from models.file import UploadedFile
 from models.entry import DocumentEntry
-
+from core.permissions import require_admin_access
 router = APIRouter()
 
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    require_admin_access(current_user)
     user_files = db.query(UploadedFile).filter(UploadedFile.user_id == current_user["id"])
 
     total_documents = user_files.count()

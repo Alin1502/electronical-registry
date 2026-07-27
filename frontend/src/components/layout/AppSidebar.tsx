@@ -1,6 +1,7 @@
 import { BarChart3, Building2, FileStack, Home, Settings, ShieldCheck, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -17,6 +18,12 @@ const navigationItems = [
 ];
 
 export function AppSidebar({ collapsed }: AppSidebarProps) {
+  const { user } = useAuthStore();
+  const hasAdminAccess = user?.is_owner || user?.permission_level === "full_access";
+  const visibleNavigationItems = hasAdminAccess
+    ? navigationItems
+    : navigationItems.filter((item) => !["/admin/users", "/admin", "/admin/settings"].includes(item.to));
+
   return (
     <aside
       className={cn(
@@ -25,7 +32,7 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
       )}
     >
       <nav className="space-y-2">
-        {navigationItems.map((item) => (
+        {visibleNavigationItems.map((item) => (
           <NavLink
             key={`${item.to}-${item.label}`}
             to={item.to}
