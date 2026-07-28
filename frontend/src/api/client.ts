@@ -280,3 +280,14 @@ export async function acceptInvite(payload: { token: string; username: string; p
   }
   return res.json();
 }
+
+export async function getCompanyUsers(token: string) {
+  const res = await fetch(`${BASE}/admin/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to fetch users");
+  }
+  return res.json();
+}

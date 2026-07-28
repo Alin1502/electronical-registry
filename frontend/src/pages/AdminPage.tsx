@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,13 +7,11 @@ import {
   createRole,
   deleteDepartment,
   deleteRole,
-  getAdminStats,
   getDepartments,
   getRoles,
   updateDepartment,
   updateRole,
 } from "@/api/client";
-import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +27,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store/authStore";
-import type { AdminStats, NamedEntity } from "@/types/registry";
-import { formatBytes, formatDateTime } from "@/lib/utils";
+import type { NamedEntity } from "@/types/registry";
 import { ChartUpload } from "@/components/registry/ChartUpload";
 import { InviteUserForm } from "@/components/registry/InviteUserForm";
 
@@ -113,9 +109,9 @@ export default function AdminPage() {
   const { token, user } = useAuthStore();
   const isAdmin = Boolean(user?.is_owner || user?.permission_level === "full_access");
 
-  const [stats, setStats] = useState<AdminStats | null>(null);
   const [departments, setDepartments] = useState<NamedEntity[]>([]);
   const [roles, setRoles] = useState<RoleEntity[]>([]);
+
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -127,16 +123,10 @@ export default function AdminPage() {
   async function loadAll() {
     if (!token) return;
     try {
-      const [statsData, deptData, roleData] = await Promise.all([
-        isAdmin ? getAdminStats(token) : Promise.resolve(null),
+      const [deptData, roleData] = await Promise.all([
         getDepartments(token),
         getRoles(token),
       ]);
-      if (statsData) {
-        setStats(statsData);
-      } else {
-        setStats({ total_documents: 0, total_storage_bytes: 0, recent_activity: [] });
-      }
       setDepartments(deptData);
       setRoles(roleData);
     } catch (error) {
@@ -146,27 +136,14 @@ export default function AdminPage() {
     }
   }
 
-  const activity = useMemo(() => stats?.recent_activity ?? [], [stats]);
-
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Card className="bg-gradient-to-br from-red-50 to-orange-50">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Documents</p>
-            <p className="mt-1 text-3xl font-semibold"><AnimatedCounter value={stats?.total_documents ?? 0} /></p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Storage Usage</p>
-            <p className="mt-1 text-3xl font-semibold">{formatBytes(stats?.total_storage_bytes ?? 0)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Recent Events</p>
-            <p className="mt-1 text-3xl font-semibold"><AnimatedCounter value={activity.length} /></p>
+            <p className="text-sm text-muted-foreground">Administration</p>
+            <h1 className="mt-2 text-2xl font-semibold">Admin Panel</h1>
+            <p className="mt-3 text-sm text-muted-foreground">Manage organization, departments, roles and users.</p>
           </CardContent>
         </Card>
       </section>
@@ -181,43 +158,11 @@ export default function AdminPage() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="activity">
-        <TabsList>
-          <TabsTrigger value="activity">Recent Activity</TabsTrigger>
-          <TabsTrigger value="organization">Organization</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Latest Registry Events</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activity.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity captured yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {activity.map((item, index) => (
-                    <div key={`${item.nr_inregistrare}-${index}`} className="rounded-md border border-border p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge>{item.register_type}</Badge>
-                        <span className="text-sm font-medium">{item.nr_inregistrare}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-muted-foreground">{item.rezumat || "No summary"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(item.timestamp)}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="organization">
-          {isAdmin ? <InviteUserForm roles={roles} /> : null}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
-              {isAdmin ? <ChartUpload onImported={loadAll} /> : null}
+      <div className="space-y-6">
+        {isAdmin ? <InviteUserForm roles={roles} /> : null}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-6">
+            {isAdmin ? <ChartUpload onImported={loadAll} /> : null}
             <EntityManager
               title="Departments"
               items={departments}
@@ -256,10 +201,9 @@ export default function AdminPage() {
                 await loadAll();
               }}
             />
-            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

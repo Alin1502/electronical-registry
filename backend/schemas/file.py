@@ -5,6 +5,7 @@ class FileResponse(BaseModel):
     id: int
     filename: str
     register_type: str
+    size_bytes: int
     uploaded_at: datetime
 
     class Config:

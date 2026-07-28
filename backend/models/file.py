@@ -12,6 +12,7 @@ class UploadedFile(Base):
     filename = Column(String, nullable=False)
     s3_key = Column(String, unique=True, nullable=False)
     register_type = Column(String, nullable=False)
+    size_bytes = Column(Integer, nullable=False, default=0)
     user_id = Column(Integer, ForeignKey("users.id"))
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     owner = relationship("User")

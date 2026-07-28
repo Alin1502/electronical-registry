@@ -3,7 +3,11 @@ import type { ReactNode } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
+import RegistryPage from "@/pages/RegistryPage";
+import RecordsPage from "@/pages/RecordsPage";
+import ReportsPage from "@/pages/ReportsPage";
+import UsersPage from "@/pages/UsersPage";
+import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import { useAuthStore } from "@/store/authStore";
 import { isTokenValid } from "@/lib/auth";
@@ -18,8 +22,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 function AdminRoute({ children }: { children: ReactNode }) {
   const { token, user } = useAuthStore();
   if (!isTokenValid(token)) return <Navigate to="/login" replace />;
+  
   if (!user?.is_owner && user?.permission_level !== "full_access") {
-    return <Navigate to="/dashboard" replace />;
+    //Secure unauthorized users from accessing admin routes
+    return <Navigate to="/records" replace />;
   }
   return <>{children}</>;
 }
@@ -31,30 +37,57 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        
+        {/*Legacy dashboard now redirects to /records to be safe for all users */}
+        <Route path="/dashboard" element={<Navigate to="/records" replace />} />
+        
         <Route
-          path="/dashboard"
+          path="/registry"
+          element={
+            //Secure the registry page with AdminRoute
+            <AdminRoute>
+              <RegistryPage />
+            </AdminRoute>
+          }
+        />
+        
+        <Route
+          path="/records"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <RecordsPage />
             </ProtectedRoute>
           }
         />
+        
         <Route
-          path="/dashboard/records"
+          path="/records/:register"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <RecordsPage />
             </ProtectedRoute>
           }
         />
+        
         <Route
-          path="/dashboard/reports"
+          path="/reports"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <ReportsPage />
             </ProtectedRoute>
           }
         />
+        
+        <Route
+          path="/users"
+          element={
+            //Secure the users page with AdminRoute
+            <AdminRoute>
+              <UsersPage />
+            </AdminRoute>
+          }
+        />
+        
         <Route
           path="/admin"
           element={
@@ -63,20 +96,13 @@ export default function App() {
             </AdminRoute>
           }
         />
+        
         <Route
-          path="/admin/users"
+          path="/settings"
           element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/settings"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
           }
         />
       </Route>

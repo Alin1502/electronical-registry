@@ -38,6 +38,7 @@ export interface UploadedFile {
   filename: string;
   uploaded_at: string;
   register_type: string;
+  size_bytes: number;
   user_id: number;
 }
 
@@ -78,7 +79,12 @@ export interface NextNumberResponse {
 }
 
 export interface AdminStats {
-  total_documents: number;
+  total_entries: number;
+  recent_entries_last_7_days: number;
+  pending_validation: number;
+  registry_count: number;
+  operator_count: number;
+  department_count: number;
   total_storage_bytes: number;
   recent_activity: Array<{
     nr_inregistrare: string;
@@ -96,3 +102,15 @@ export interface NamedEntity {
 export interface RoleEntity extends NamedEntity {
   permission_level: "full_access" | "read_write" | "read";
 }
+
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  permission_level: "full_access" | "read_write" | "read";
+  is_owner: boolean;
+}
+
+export type DownloadResponse = {
+  download_url: string;
+};

@@ -51,7 +51,7 @@ export default function LoginPage() {
         if (result.access_token) {
           setToken(result.access_token);
           toast.success("Welcome back");
-          navigate("/dashboard");
+          navigate("/registry");
           return;
         }
       }

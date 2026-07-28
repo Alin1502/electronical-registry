@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Download, FileDown, FilePlus2, FileText, Link2, Trash2, UploadCloud } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Download, FilePlus2, FileText, Link2, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import {
   createEntry,
@@ -14,9 +14,8 @@ import {
   removeFile,
   uploadFile,
 } from "@/api/client";
-import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { AdvancedFilterPanel, type RegistryFilters } from "@/components/registry/AdvancedFilterPanel";
+import { RegistryRoomsTable } from "@/components/registry/RegistryRoomsTable";
 import { RegistryTable } from "@/components/registry/RegistryTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store/authStore";
 import type { DocumentEntry, EntryPayload, NamedEntity, UploadedFile } from "@/types/registry";
 import { formatDate } from "@/lib/utils";
@@ -75,12 +73,12 @@ const initialForm: EntryPayload = {
   file_id: null,
 };
 
-export default function DashboardPage() {
+export default function RecordsPage() {
   const navigate = useNavigate();
+  const { register } = useParams();
   const { token, user } = useAuthStore();
   const isReadOnlyUser = user?.permission_level === "read";
 
-  const [activeRegister, setActiveRegister] = useState<string>(REGISTERS[0]);
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [departments, setDepartments] = useState<NamedEntity[]>([]);
@@ -95,16 +93,24 @@ export default function DashboardPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkedFileName, setLinkedFileName] = useState<string>("");
 
+  const activeRegister = REGISTERS.includes(register as (typeof REGISTERS)[number])
+    ? (register as (typeof REGISTERS)[number])
+    : null;
+
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
-    void loadDepartments();
-  }, [token, navigate]);
+
+    if (register && !activeRegister) {
+      navigate("/records", { replace: true });
+    }
+  }, [activeRegister, navigate, register, token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !activeRegister) return;
+    void loadDepartments();
     void refreshData(activeRegister);
     setEntryForm((prev) => ({ ...prev, register_type: activeRegister }));
   }, [activeRegister, token]);
@@ -114,7 +120,12 @@ export default function DashboardPage() {
     [files, activeRegister],
   );
 
-  const activeRegisterLabel = REGISTER_LABELS[activeRegister] ?? activeRegister;
+  const activeRegisterLabel = activeRegister ? REGISTER_LABELS[activeRegister] ?? activeRegister : "";
+
+  const registryRooms = REGISTERS.map((room) => ({
+    code: room,
+    label: REGISTER_LABELS[room] ?? room,
+  }));
 
   async function loadDepartments() {
     if (!token) return;
@@ -122,7 +133,7 @@ export default function DashboardPage() {
       const data = await getDepartments(token);
       setDepartments(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca departamentele");
+      toast.error(error instanceof Error ? error.message : "Failed to load departments");
     }
   }
 
@@ -146,7 +157,7 @@ export default function DashboardPage() {
         cod: nextNr.cod,
       }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca datele");
+      toast.error(error instanceof Error ? error.message : "Failed to load data");
     } finally {
       setLoadingEntries(false);
       setLoadingFiles(false);
@@ -241,40 +252,26 @@ export default function DashboardPage() {
     }
   }
 
+  if (!activeRegister) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold text-foreground">Register types</h1>
+        <RegistryRoomsTable rooms={registryRooms} onSelectRoom={(roomCode) => navigate(`/records/${encodeURIComponent(roomCode)}`)} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="xl:col-span-1 bg-gradient-to-br from-cyan-50 to-blue-50">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Workspace</p>
-            <h1 className="mt-2 text-2xl font-semibold">{user?.company_name ?? "Company Registry"}</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Manage entries, files, and exports with one flow.</p>
+            <p className="text-sm text-muted-foreground">Document Upload</p>
+            <h1 className="mt-2 text-2xl font-semibold">Records Management</h1>
+            <p className="mt-3 text-sm text-muted-foreground">Upload PDFs and create registry entries.</p>
           </CardContent>
         </Card>
-
-        <StatCard title="Total Entries" value={<AnimatedCounter value={entries.length} />} detail="updated in real-time" />
-        <StatCard title="Files in Register" value={<AnimatedCounter value={registerFiles.length} />} detail="PDF archive linked" />
-        <StatCard
-          title="Active Register"
-          value={activeRegisterLabel}
-          valueClassName="max-w-[14rem] break-words text-2xl leading-tight md:text-3xl"
-          detail="switch from tabs below"
-        />
       </section>
-
-      <Card>
-        <CardContent className="p-4">
-          <Tabs value={activeRegister} onValueChange={setActiveRegister}>
-            <TabsList className="h-auto flex-wrap gap-1 bg-transparent p-0">
-              {REGISTERS.map((register) => (
-                <TabsTrigger key={register} value={register} className="rounded-md border border-border bg-card text-xs">
-                  {REGISTER_LABELS[register] ?? register}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
 
       <AdvancedFilterPanel filters={filters} onChange={setFilters} />
 
@@ -282,7 +279,7 @@ export default function DashboardPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Upload PDF</CardTitle>
+              <CardTitle>{activeRegisterLabel}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-sm text-muted-foreground">
@@ -466,7 +463,6 @@ export default function DashboardPage() {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="w-full" variant="secondary">
-                    <FileDown className="mr-2 h-4 w-4" />
                     Download Excel
                   </Button>
                 </DialogTrigger>
@@ -493,7 +489,6 @@ export default function DashboardPage() {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="w-full" variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
                     Download All PDFs
                   </Button>
                 </DialogTrigger>

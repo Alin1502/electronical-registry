@@ -38,6 +38,14 @@ async def upload_pdf(
     safe_ext = ext or ".pdf"
     s3_key = f"user_{current_user['id']}/{safe_folder}/{safe_name}-{uuid.uuid4().hex[:12]}{safe_ext}"
 
+    size_bytes = 0
+    try:
+                file.file.seek(0, os.SEEK_END)
+                size_bytes = file.file.tell()
+                file.file.seek(0)
+    except Exception:
+                size_bytes = 0
+
     try:
         upload_file_to_s3(file.file, s3_key)
     except Exception as e:
@@ -47,6 +55,7 @@ async def upload_pdf(
         filename=filename,
         s3_key=s3_key,
         register_type=register_type,
+        size_bytes=size_bytes,
         user_id=current_user['id']
     )
     db.add(db_file)

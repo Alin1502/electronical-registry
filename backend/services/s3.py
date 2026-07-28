@@ -26,6 +26,10 @@ def download_file_from_s3(s3_key: str) -> bytes:
     response = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
     return response["Body"].read()
 
+def get_file_size_from_s3(s3_key: str) -> int:
+    response = s3_client.head_object(Bucket=BUCKET_NAME, Key=s3_key)
+    return int(response.get("ContentLength", 0))
+
 def upload_chart_to_s3(file_bytes: bytes, user_id: int, content_type: str = "image/png") -> str:
     key = f"org-charts/{user_id}/{uuid.uuid4()}.png"
     s3_client.put_object(

@@ -9,12 +9,12 @@ interface AppSidebarProps {
 
 const navigationItems = [
   { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/dashboard", label: "Registry", icon: FileStack, end: true },
-  { to: "/dashboard/records", label: "Records", icon: Building2, end: true },
-  { to: "/dashboard/reports", label: "Reports", icon: BarChart3, end: true },
-  { to: "/admin/users", label: "Users", icon: Users, end: true },
+  { to: "/registry", label: "Registry", icon: FileStack, end: true },
+  { to: "/records", label: "Records", icon: Building2, end: true },
+  { to: "/reports", label: "Reports", icon: BarChart3, end: true },
+  { to: "/users", label: "Users", icon: Users, end: true },
   { to: "/admin", label: "Admin", icon: ShieldCheck, end: true },
-  { to: "/admin/settings", label: "Settings", icon: Settings, end: true },
+  { to: "/settings", label: "Settings", icon: Settings, end: true },
 ];
 
 export function AppSidebar({ collapsed }: AppSidebarProps) {
@@ -22,29 +22,35 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
   const hasAdminAccess = user?.is_owner || user?.permission_level === "full_access";
   const visibleNavigationItems = hasAdminAccess
     ? navigationItems
-    : navigationItems.filter((item) => !["/admin/users", "/admin", "/admin/settings"].includes(item.to));
+    : navigationItems.filter((item) => !["/admin", "/users", "/registry"].includes(item.to));
 
   return (
     <aside
       className={cn(
-        "sticky top-24 hidden h-[calc(100vh-7rem)] rounded-md border border-border/80 bg-card/85 p-4 shadow-soft backdrop-blur md:block",
-        collapsed ? "w-20" : "w-64",
+        // Removed: rounded-md, shadow-soft, sticky, p-4, backdrop-blur
+        // Added: flex-col, h-screen, border-r, z-10
+        "hidden h-screen flex-col border-r border-border bg-background transition-all duration-300 md:flex z-10",
+        collapsed ? "w-16 items-center px-2 py-4" : "w-64 px-4 py-4"
       )}
     >
-      <nav className="space-y-2">
+      <nav className="flex w-full flex-col gap-1 mt-4">
         {visibleNavigationItems.map((item) => (
           <NavLink
             key={`${item.to}-${item.label}`}
             to={item.to}
             end={item.end}
+            title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition",
-                isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted hover:text-foreground",
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                isActive 
+                  ? "bg-secondary text-secondary-foreground" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                collapsed && "justify-center px-0" // Center icon when collapsed
               )
             }
           >
-            <item.icon className="h-4 w-4 shrink-0" />
+            <item.icon className="h-5 w-5 shrink-0" />
             {!collapsed && <span>{item.label}</span>}
           </NavLink>
         ))}

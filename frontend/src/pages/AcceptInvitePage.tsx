@@ -24,7 +24,7 @@ export default function AcceptInvitePage() {
       const result = await acceptInvite({ token, username: username.trim(), password });
       setToken(result.access_token);
       toast.success("Account created");
-      navigate("/dashboard");
+      navigate("/registry");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to accept invite");
     } finally {

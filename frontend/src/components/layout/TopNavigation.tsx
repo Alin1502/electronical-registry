@@ -40,15 +40,25 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-xl">
-      <div className="container flex h-20 items-center gap-4">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
+      {/* Replaced 'container' with 'w-full px-6' for an edge-to-edge layout inside the flex pane */}
+      <div className="flex h-16 w-full items-center gap-4 px-6">
+        
+        {/* The Hamburger Menu Toggle (Only visible if logged in) */}
+        {token && (
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={onToggleSidebar}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 text-sm font-semibold text-white shadow-soft">
-            <img src="/REGIX_LOGO.png" alt="Regix Logo" />
+          {/* Removed AI gradient and shadow. Just a clean logo wrapper now. */}
+          <div className="flex h-8 w-8 items-center justify-center">
+            <img src="/REGIX_LOGO.png" alt="Regix Logo" className="h-full w-full object-contain" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Regix</p>
-            <p className="text-xs text-muted-foreground">Electronic Registry Workspace</p>
+            <p className="text-sm font-semibold leading-tight">Regix</p>
+            <p className="text-xs text-muted-foreground">Electronic Registry</p>
           </div>
         </Link>
 
@@ -65,7 +75,7 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
         {token ? (
           <div className="relative ml-auto hidden min-w-[260px] flex-1 md:flex md:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="rounded-md pl-10" placeholder="Search records, files, users..." />
+            <Input className="rounded-md bg-muted/50 pl-10 border-transparent focus:border-border focus:bg-background transition-colors" placeholder="Search records, files, users..." />
           </div>
         ) : (
           <div className="ml-auto hidden items-center gap-2 lg:flex">
@@ -75,50 +85,57 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
           </div>
         )}
 
-        <Button variant="ghost" size="icon" className="rounded-md" onClick={onToggleDarkMode}>
-          {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
-
-        {/* notification */}
-        {token ? (
-          <Button variant="ghost" size="icon" className="rounded-md"> 
-            <Bell className="h-5 w-5" />
+        <div className="flex items-center gap-2 ml-auto md:ml-0">
+          <Button variant="ghost" size="icon" onClick={onToggleDarkMode}>
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
-        ) : null}
 
-        {token ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition hover:shadow-soft">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-sm font-semibold text-accent-foreground">
-                  {initials}
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium leading-none">{user?.sub ?? "Utilizator"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{user?.company_name ?? "Companie"}</p>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuItem>
-                <UserCircle2 className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/dashboard")}>Dashboard</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/admin")}>Administrare</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  logout();
-                  navigate("/login");
-                }}
-              >
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+          {/* notification */}
+          {token ? (
+            <Button variant="ghost" size="icon"> 
+              <Bell className="h-5 w-5" />
+            </Button>
+          ) : null}
+
+          {token ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                {/* Removed hover:shadow-soft and heavy background colors to flatten the UI */}
+                <button className="flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-left transition hover:bg-muted">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-secondary-foreground">
+                    {initials}
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className="text-sm font-medium leading-none">{user?.sub ?? "Utilizator"}</p>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <p>{user?.sub ?? "Utilizator"}</p>
+                  <p className="font-normal text-xs text-muted-foreground mt-1">{user?.company_name ?? "Companie"}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <UserCircle2 className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/registry")}>Registry</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/admin")}>Administrare</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
+                  className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                >
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
       </div>
     </header>
   );

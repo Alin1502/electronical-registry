@@ -3,10 +3,12 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.database import Base, engine
+from core.migrations import ensure_uploaded_file_size_column
 import models.user, models.file, models.entry
 from routes import auth, files, entries, roles, departments, admin, invites
 
 Base.metadata.create_all(bind=engine)
+ensure_uploaded_file_size_column(engine)
 
 app = FastAPI()
 
