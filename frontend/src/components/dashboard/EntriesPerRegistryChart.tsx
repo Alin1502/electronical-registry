@@ -1,22 +1,9 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DocumentEntry } from "@/types/registry";
 
 interface EntriesPerRegistryChartProps {
   entries: DocumentEntry[];
 }
-
-const REGISTER_COLORS: Record<string, string> = {
-  contracte: "#3b82f6",
-  "intrari/iesiri": "#8b5cf6",
-  "decizii/hotarari": "#06b6d4",
-  facturi: "#f59e0b",
-  jurnal: "#10b981",
-  inventar: "#ef4444",
-  casa: "#ec4899",
-  "unic de control": "#14b8a6",
-  "evidenta a salariatilor": "#f97316",
-};
 
 export function EntriesPerRegistryChart({ entries }: EntriesPerRegistryChartProps) {
   // Count entries by register type
@@ -32,26 +19,26 @@ export function EntriesPerRegistryChart({ entries }: EntriesPerRegistryChartProp
       registry: registry.substring(0, 15),
       count,
       fullName: registry,
-      fill: REGISTER_COLORS[registry] || "#9ca3af",
     }))
     .sort((a, b) => b.count - a.count);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold">Entries per Registry</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
+    <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+      <h3 className="text-sm font-medium mb-6 text-foreground">Entries per Registry</h3>
+      <div className="h-[280px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} layout="vertical" margin={{ left: 120, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis type="number" fontSize={12} />
-            <YAxis dataKey="registry" type="category" fontSize={12} width={110} />
-            <Tooltip />
-            <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis type="number" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
+            <YAxis dataKey="registry" type="category" fontSize={12} width={110} tick={{ fill: "#374151" }} axisLine={{ stroke: "#e5e7eb" }} />
+            <Tooltip 
+              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+              cursor={{ fill: "rgba(0,0,0,0.02)" }} 
+            />
+            <Bar dataKey="count" fill="#475569" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

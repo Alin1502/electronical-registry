@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getFiles } from "@/api/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
@@ -38,50 +37,56 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Archives & Reports</p>
-            <h1 className="mt-2 text-2xl font-semibold">File Archive</h1>
-            <p className="mt-3 text-sm text-muted-foreground">View and manage archived documents and reports.</p>
-          </CardContent>
-        </Card>
+    <div className="space-y-8">
+      {/* 1. Flattened Header */}
+      <section className="flex flex-col gap-1 border-b border-border pb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">File Archive</h1>
+        <p className="text-sm text-muted-foreground">View and manage archived documents and reports.</p>
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Archived Files</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* 2. Unified List Container */}
+      <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+        <div className="px-5 py-4 border-b border-border bg-muted/20 flex items-center gap-2">
+          <Archive className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">All Archived Files</h3>
+        </div>
+        
+        <div className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">Loading files...</div>
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading files...</div>
           ) : files.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Archive className="mb-3 h-8 w-8 text-muted-foreground" />
-              <p className="text-muted-foreground">No archived files yet.</p>
+              <Archive className="mb-3 h-8 w-8 text-muted-foreground opacity-50" />
+              <p className="text-sm text-muted-foreground">No archived files yet.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-border">
               {files.map((file) => (
-                <div key={file.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{file.filename}</p>
-                      <Badge variant="outline">{file.register_type}</Badge>
+                <div 
+                  key={file.id} 
+                  className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="text-sm font-medium text-foreground truncate">{file.filename}</p>
+                      <Badge variant="secondary" className="font-normal whitespace-nowrap">
+                        {file.register_type}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Uploaded {formatDate(file.uploaded_at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Uploaded {formatDate(file.uploaded_at)}
+                    </p>
                   </div>
-                  <Button size="sm" variant="outline">
-                    <Download className="mr-1 h-4 w-4" />
+                  <Button size="sm" variant="outline" className="shrink-0 bg-background hover:bg-muted">
+                    <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

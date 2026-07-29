@@ -1,5 +1,4 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DocumentEntry } from "@/types/registry";
 
 interface StatusDistributionChartProps {
@@ -7,10 +6,10 @@ interface StatusDistributionChartProps {
 }
 
 const COLORS = {
-  validated: "#10b981",
-  pending: "#f59e0b",
-  rejected: "#ef4444",
-  archived: "#6366f1",
+  validated: "#059669", // Muted Emerald
+  pending: "#d97706",   // Muted Ochre
+  rejected: "#e11d48",  // Muted Rose
+  archived: "#64748b",  // Slate
 };
 
 export function StatusDistributionChart({ entries }: StatusDistributionChartProps) {
@@ -31,37 +30,33 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
 
   if (chartData.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Status Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-            No status data available
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+        <h3 className="text-sm font-medium mb-6 text-foreground">Status Distribution</h3>
+        <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+          No status data available
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold">Status Distribution</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
+    <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+      <h3 className="text-sm font-medium mb-6 text-foreground">Status Distribution</h3>
+      <div className="h-[250px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+            <Tooltip 
+              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280" }} iconType="circle" />
+            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} stroke="none" label>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

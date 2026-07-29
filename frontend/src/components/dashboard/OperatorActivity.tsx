@@ -1,16 +1,13 @@
 import { Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { DocumentEntry } from "@/types/registry";
-import type { User } from "@/types/registry";
+import type { DocumentEntry, User } from "@/types/registry";
 
 interface OperatorActivityProps {
   entries: DocumentEntry[];
   users?: User[];
 }
 
-export function OperatorActivity({ entries }: OperatorActivityProps) {
-  // Group entries by user_id to get uploads per user
+export function OperatorActivity({ entries, users }: OperatorActivityProps) {
   const userActivity: Record<string, { uploads: number; department: string; lastEntry: string }> = {};
 
   entries.forEach((entry) => {
@@ -23,7 +20,6 @@ export function OperatorActivity({ entries }: OperatorActivityProps) {
 
     userActivity[userId].uploads++;
     
-    // Track the most recent entry
     if (new Date(entry.created_at) > new Date(userActivity[userId].lastEntry)) {
       userActivity[userId].lastEntry = entry.created_at;
     }
@@ -37,54 +33,60 @@ export function OperatorActivity({ entries }: OperatorActivityProps) {
     .sort((a, b) => b.uploads - a.uploads)
     .slice(0, 6);
 
+  // Helper function to map the ID to the real username
+  const getUserName = (id: string) => {
+    if (!users) return `User ${id}`;
+    const foundUser = users.find((u) => u.id.toString() === id);
+    return foundUser ? foundUser.username : `User ${id}`;
+  };
+
   if (activityList.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Operator Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            No activity yet
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+        <h3 className="text-sm font-medium mb-4 text-foreground flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          Operator Activity
+        </h3>
+        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+          No activity yet
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Operator Activity
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {activityList.map((activity) => (
-            <div key={activity.userId} className="flex items-center justify-between rounded-lg border border-border bg-card p-3 hover:bg-muted/20 transition-colors">
+    <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+      <h3 className="text-sm font-medium mb-4 text-foreground flex items-center gap-2">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        Operator Activity
+      </h3>
+      <div className="space-y-2 mt-2">
+        {activityList.map((activity) => {
+          const displayName = getUserName(activity.userId);
+          
+          return (
+            <div key={activity.userId} className="flex items-center justify-between rounded-md p-3 hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs font-semibold text-white">
-                    {activity.userId.substring(0, 1)}
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-medium text-muted-foreground capitalize">
+                    {displayName.substring(0, 1)}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">User {activity.userId}</p>
+                    <p className="text-sm font-medium text-foreground">{displayName}</p>
                     <p className="text-xs text-muted-foreground">{activity.department}</p>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <Badge variant="default">{activity.uploads} uploads</Badge>
-                <p className="mt-1 text-xs text-muted-foreground">
+              <div className="text-right flex flex-col items-end">
+                <Badge variant="secondary" className="font-normal text-xs">{activity.uploads} uploads</Badge>
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
                   {new Date(activity.lastEntry).toLocaleDateString("ro-RO")}
                 </p>
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }

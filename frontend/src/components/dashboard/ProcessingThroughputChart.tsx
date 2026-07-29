@@ -1,5 +1,4 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DocumentEntry } from "@/types/registry";
 
 interface ProcessingThroughputChartProps {
@@ -31,31 +30,33 @@ export function ProcessingThroughputChart({ entries }: ProcessingThroughputChart
     .slice(-14);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold">Processing Throughput (last 14 days)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData} margin={{ left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="day" fontSize={12} />
-            <YAxis fontSize={12} />
-            <Tooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line type="monotone" dataKey="created" stroke="#3b82f6" name="Created" strokeWidth={2} dot={{ r: 3 }} />
+    <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+      <h3 className="text-sm font-medium mb-6 text-foreground">Processing Throughput (last 14 days)</h3>
+      <div className="h-[250px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ left: -20, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis dataKey="day" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
+            <YAxis fontSize={12} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} />
+            <Tooltip 
+              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+              cursor={{ stroke: "#e5e7eb", strokeWidth: 1, strokeDasharray: "3 3" }} 
+            />
+            <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />
+            <Line type="monotone" dataKey="created" stroke="#334155" name="Created" strokeWidth={2} dot={{ r: 3, strokeWidth: 0, fill: "#334155" }} activeDot={{ r: 5 }} />
             <Line
               type="monotone"
               dataKey="processed"
-              stroke="#10b981"
+              stroke="#94a3b8"
               name="Processed"
               strokeWidth={2}
-              dot={{ r: 3 }}
+              dot={{ r: 3, strokeWidth: 0, fill: "#94a3b8" }}
+              activeDot={{ r: 5 }}
               strokeDasharray="5 5"
             />
           </LineChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

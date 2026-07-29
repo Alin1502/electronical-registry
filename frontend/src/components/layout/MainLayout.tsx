@@ -13,30 +13,25 @@ export function MainLayout() {
   const location = useLocation();
   const token = useAuthStore((state) => state.token);
   const isAuthenticated = isTokenValid(token);
-  const isRegistryPage = location.pathname === "/registry" || location.pathname.startsWith("/registry/");
+  
+  // REMOVED: The isRegistryPage check that was hiding your nav bar
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
   return (
-    // Replaced "container grid" with a full-screen flex layout. Added a muted background.
     <div className="flex h-screen w-full bg-slate-50 dark:bg-background overflow-hidden">
-      
-      {/* Sidebar is now a direct flex child anchored to the left */}
       {isAuthenticated && <AppSidebar collapsed={sidebarCollapsed} />}
 
-      {/* Main content wrapper */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {!isRegistryPage && (
-          <TopNavigation
-            onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
-            darkMode={darkMode}
-            onToggleDarkMode={() => setDarkMode((prev) => !prev)}
-          />
-        )}
+        {/* FIX: TopNavigation now renders unconditionally on every page */}
+        <TopNavigation
+          onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode((prev) => !prev)}
+        />
 
-        {/* Scrollable page content */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <div className="mx-auto max-w-7xl">
             <Breadcrumbs />

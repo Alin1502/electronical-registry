@@ -1,5 +1,4 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DocumentEntry } from "@/types/registry";
 
 interface DocumentVolumeChartProps {
@@ -34,24 +33,25 @@ export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVol
     .slice(-6);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold">Document Volume by Flow</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={250}>
+    <div className="flex flex-col border border-border bg-background p-5 rounded-md">
+      <h3 className="text-sm font-medium mb-6 text-foreground">Document Volume by Flow</h3>
+      <div className="h-[250px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="month" fontSize={12} />
-            <YAxis fontSize={12} />
-            <Tooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="input" stackId="a" fill="#3b82f6" name="Input" />
-            <Bar dataKey="output" stackId="a" fill="#8b5cf6" name="Output" />
-            <Bar dataKey="internal" stackId="a" fill="#06b6d4" name="Internal" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis dataKey="month" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
+            <YAxis fontSize={12} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} />
+            <Tooltip 
+              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+              cursor={{ fill: "rgba(0,0,0,0.02)" }} 
+            />
+            <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />
+            <Bar dataKey="input" stackId="a" fill="#334155" name="Input" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="output" stackId="a" fill="#94a3b8" name="Output" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="internal" stackId="a" fill="#e2e8f0" name="Internal" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

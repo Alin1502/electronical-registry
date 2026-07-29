@@ -291,3 +291,29 @@ export async function getCompanyUsers(token: string) {
   }
   return res.json();
 }
+
+export async function removeUser(token: string, userId: number): Promise<void> {
+  const response = await fetch(`${BASE}/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to remove user");
+  }
+}
+
+export async function updateUserRole(token: string, userId: number, roleId: number | null): Promise<void> {
+  const response = await fetch(`${BASE}/admin/users/${userId}/role`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ role_id: roleId }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to update user role");
+  }
+}

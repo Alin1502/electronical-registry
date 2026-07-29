@@ -19,7 +19,6 @@ import { RegistryRoomsTable } from "@/components/registry/RegistryRoomsTable";
 import { RegistryTable } from "@/components/registry/RegistryTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -252,269 +251,262 @@ export default function RecordsPage() {
     }
   }
 
+  // --- RENDERING NO ACTIVE REGISTER ---
   if (!activeRegister) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-foreground">Register types</h1>
+      <div className="space-y-8">
+        <section className="flex flex-col gap-1 border-b border-border pb-6">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Registry Selection</h1>
+          <p className="text-sm text-muted-foreground">Select a register type below to view and manage its entries.</p>
+        </section>
         <RegistryRoomsTable rooms={registryRooms} onSelectRoom={(roomCode) => navigate(`/records/${encodeURIComponent(roomCode)}`)} />
       </div>
     );
   }
 
+  // --- RENDERING ACTIVE REGISTER ---
   return (
-    <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Document Upload</p>
-            <h1 className="mt-2 text-2xl font-semibold">Records Management</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Upload PDFs and create registry entries.</p>
-          </CardContent>
-        </Card>
+    <div className="space-y-8">
+      {/* 1. Flattened Header */}
+      <section className="flex flex-col gap-1 border-b border-border pb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
+        <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
       </section>
 
-      <AdvancedFilterPanel filters={filters} onChange={setFilters} />
+      {/* 2. Action Row (Upload & Export side-by-side) */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Upload & Files (Takes up 2/3 of the row) */}
+        <div className="lg:col-span-2 flex flex-col border border-border bg-background rounded-md overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-muted/20">
+            <h3 className="text-sm font-medium text-foreground">Document Upload</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/10 p-4 md:flex-row md:items-center">
+              <Input
+                type="file"
+                accept="application/pdf"
+                disabled={isReadOnlyUser}
+                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                className="bg-background"
+              />
+              <Button disabled={!selectedFile || uploading || isReadOnlyUser} onClick={handleUploadFile}>
+                <UploadCloud className="mr-2 h-4 w-4" />
+                {uploading ? "Uploading..." : "Upload PDF"}
+              </Button>
+            </div>
+            {isReadOnlyUser && <p className="text-xs text-muted-foreground">Read-only users cannot upload or create entries.</p>}
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{activeRegisterLabel}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Uploading a PDF will immediately ask for entry details (nr, cod, rezumat, etc.) in the next step.
-              </p>
-              <div className="mb-4 flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/20 p-4 md:flex-row md:items-center">
-                <Input
-                  type="file"
-                  accept="application/pdf"
-                  disabled={isReadOnlyUser}
-                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                />
-                <Button disabled={!selectedFile || uploading || isReadOnlyUser} onClick={handleUploadFile}>
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  {uploading ? "Uploading..." : "Upload PDF"}
-                </Button>
-              </div>
-              {isReadOnlyUser ? <p className="mb-4 text-sm text-muted-foreground">Read-only users cannot upload or create entries.</p> : null}
-
-              {loadingFiles ? (
-                <p className="text-sm text-muted-foreground">Loading files...</p>
-              ) : registerFiles.length === 0 ? (
-                <div className="rounded-md border border-dashed border-border bg-muted/30 p-8 text-center">
-                  <FileText className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">No files uploaded for this register.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {registerFiles.map((file) => (
-                    <div key={file.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-4">
-                      <div>
-                        <p className="font-medium">{file.filename}</p>
-                        <p className="text-xs text-muted-foreground">Uploaded {formatDate(file.uploaded_at)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="success">Secure PDF</Badge>
-                        <Button size="sm" variant="outline" onClick={() => handleDownloadFile(file.id)}>
-                          <Download className="mr-1 h-4 w-4" />
-                          Download
-                        </Button>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="danger">
-                              <Trash2 className="mr-1 h-4 w-4" />
-                              Delete
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Delete file?</DialogTitle>
-                              <DialogDescription>This action also removes linked registry entries.</DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button variant="outline">Cancel</Button>
-                              <Button variant="danger" onClick={() => handleDeleteFile(file.id)}>Confirm Delete</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+            {/* Uploaded Files Sub-section */}
+            {loadingFiles ? (
+              <p className="text-sm text-muted-foreground pt-2">Loading files...</p>
+            ) : registerFiles.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border space-y-2 max-h-48 overflow-y-auto pr-2">
+                {registerFiles.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/20 p-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{file.filename}</p>
+                      <p className="text-xs text-muted-foreground">Uploaded {formatDate(file.uploaded_at)}</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Dialog open={entryModalOpen} onOpenChange={handleEntryModalChange}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Complete Entry Details</DialogTitle>
-                <DialogDescription>Step 2 of 2 after upload: fill nr, cod and details for this uploaded PDF.</DialogDescription>
-              </DialogHeader>
-
-              <div className="grid gap-4 py-2">
-                {entryForm.file_id && linkedFileName ? (
-                  <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-                    <div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
-                      <Link2 className="h-4 w-4" />
-                      Linked PDF
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button size="sm" variant="ghost" onClick={() => handleDownloadFile(file.id)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Delete file?</DialogTitle>
+                            <DialogDescription>This action also removes linked registry entries.</DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button variant="outline">Cancel</Button>
+                            <Button variant="danger" onClick={() => handleDeleteFile(file.id)}>Confirm Delete</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    <div>{linkedFileName}</div>
                   </div>
-                ) : null}
-
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nr inregistrare</label>
-                  <Input value={entryForm.nr_inregistrare} readOnly />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Cod</label>
-                  <Input value={entryForm.cod} readOnly />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Iesire/Intrare</label>
-                  <Input
-                    value={entryForm.iesire_intrare}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, iesire_intrare: event.target.value }))}
-                    placeholder="intrare"
-                  />
-                  {errors.iesire_intrare && <p className="text-xs text-danger">{errors.iesire_intrare}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nr/Data Emitent</label>
-                  <Input
-                    value={entryForm.nr_data_emitent}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_emitent: event.target.value }))}
-                    placeholder="12/03/2024"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nr/Data Destinatar</label>
-                  <Input
-                    value={entryForm.nr_data_destinator}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_destinator: event.target.value }))}
-                    placeholder="12/03/2024"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Rezumat</label>
-                  <Input
-                    value={entryForm.rezumat}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, rezumat: event.target.value }))}
-                    placeholder="Brief summary"
-                  />
-                  {errors.rezumat && <p className="text-xs text-danger">{errors.rezumat}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Repartizare departament</label>
-                  <Input
-                    list="departments-list"
-                    value={entryForm.repartizare_dpt}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, repartizare_dpt: event.target.value }))}
-                    placeholder="Select or type a department"
-                  />
-                  <datalist id="departments-list">
-                    {departments.map((department) => (
-                      <option key={department.id} value={department.name} />
-                    ))}
-                  </datalist>
-                  {errors.repartizare_dpt && <p className="text-xs text-danger">{errors.repartizare_dpt}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Mod rezolvare</label>
-                  <Input
-                    value={entryForm.mod_rezolvare}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, mod_rezolvare: event.target.value }))}
-                    placeholder="In progress"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Nr pag & nr anexe</label>
-                  <Input
-                    value={entryForm.nr_pag_anexe}
-                    onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_pag_anexe: event.target.value }))}
-                    placeholder="3 pagini / 2 anexe"
-                  />
-                </div>
+                ))}
               </div>
-
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button onClick={handleCreateEntry} disabled={isReadOnlyUser}>
-                  <FilePlus2 className="mr-2 h-4 w-4" />
-                  Save Entry
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <RegistryTable entries={entries} filters={filters} loading={loadingEntries} onDownloadFile={handleDownloadFile} />
+            )}
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Exports</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full" variant="secondary">
-                    Download Excel
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Generate Excel export</DialogTitle>
-                    <DialogDescription>Export all entries in current register to .xlsx format.</DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline">Cancel</Button>
-                    <Button
-                      onClick={async () => {
-                        if (!token) return;
-                        await downloadExcel(token, activeRegister);
-                        toast.success("Excel downloaded");
-                      }}
-                    >
-                      Confirm
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+        {/* Exports (Takes up 1/3 of the row) */}
+        <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-muted/20">
+            <h3 className="text-sm font-medium text-foreground">Exports</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full" variant="outline">
+                  Download Excel
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate Excel export</DialogTitle>
+                  <DialogDescription>Export all entries in current register to .xlsx format.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline">Cancel</Button>
+                  <Button onClick={async () => {
+                      if (!token) return;
+                      await downloadExcel(token, activeRegister);
+                      toast.success("Excel downloaded");
+                    }}>Confirm</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full" variant="outline">
-                    Download All PDFs
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create ZIP archive</DialogTitle>
-                    <DialogDescription>Bundle all PDFs in selected register into one archive.</DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline">Cancel</Button>
-                    <Button
-                      onClick={async () => {
-                        if (!token) return;
-                        await downloadAllPdfs(token, activeRegister);
-                        toast.success("ZIP downloaded");
-                      }}
-                    >
-                      Confirm
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full" variant="outline">
+                  Download All PDFs
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create ZIP archive</DialogTitle>
+                  <DialogDescription>Bundle all PDFs in selected register into one archive.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline">Cancel</Button>
+                  <Button onClick={async () => {
+                      if (!token) return;
+                      await downloadAllPdfs(token, activeRegister);
+                      toast.success("ZIP downloaded");
+                    }}>Confirm</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
+
+      {/* 3. The Unified Data Section (Filters + Table) */}
+      <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+        {/* The Filters sit directly on top of the table now */}
+        <div className="border-b border-border bg-muted/5">
+          <AdvancedFilterPanel filters={filters} onChange={setFilters} />
+        </div>
+        
+        {/* The Table */}
+        <div className="p-0">
+          <RegistryTable entries={entries} filters={filters} loading={loadingEntries} onDownloadFile={handleDownloadFile} />
+        </div>
+      </div>
+
+      {/* Hidden Modal for Entry Details */}
+      <Dialog open={entryModalOpen} onOpenChange={handleEntryModalChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Entry Details</DialogTitle>
+            <DialogDescription>Step 2 of 2 after upload: fill nr, cod and details for this uploaded PDF.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            {entryForm.file_id && linkedFileName ? (
+              <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                <div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
+                  <Link2 className="h-4 w-4" />
+                  Linked PDF
+                </div>
+                <div>{linkedFileName}</div>
+              </div>
+            ) : null}
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Nr inregistrare</label>
+              <Input value={entryForm.nr_inregistrare} readOnly className="bg-muted/50" />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Cod</label>
+              <Input value={entryForm.cod} readOnly className="bg-muted/50" />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Iesire/Intrare</label>
+              <Input
+                value={entryForm.iesire_intrare}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, iesire_intrare: event.target.value }))}
+                placeholder="intrare"
+              />
+              {errors.iesire_intrare && <p className="text-xs text-red-500">{errors.iesire_intrare}</p>}
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Nr/Data Emitent</label>
+              <Input
+                value={entryForm.nr_data_emitent}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_emitent: event.target.value }))}
+                placeholder="12/03/2024"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Nr/Data Destinatar</label>
+              <Input
+                value={entryForm.nr_data_destinator}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_destinator: event.target.value }))}
+                placeholder="12/03/2024"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Rezumat</label>
+              <Input
+                value={entryForm.rezumat}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, rezumat: event.target.value }))}
+                placeholder="Brief summary"
+              />
+              {errors.rezumat && <p className="text-xs text-red-500">{errors.rezumat}</p>}
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Repartizare departament</label>
+              <Input
+                list="departments-list"
+                value={entryForm.repartizare_dpt}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, repartizare_dpt: event.target.value }))}
+                placeholder="Select or type a department"
+              />
+              <datalist id="departments-list">
+                {departments.map((department) => (
+                  <option key={department.id} value={department.name} />
+                ))}
+              </datalist>
+              {errors.repartizare_dpt && <p className="text-xs text-red-500">{errors.repartizare_dpt}</p>}
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Mod rezolvare</label>
+              <Input
+                value={entryForm.mod_rezolvare}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, mod_rezolvare: event.target.value }))}
+                placeholder="In progress"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Nr pag & nr anexe</label>
+              <Input
+                value={entryForm.nr_pag_anexe}
+                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_pag_anexe: event.target.value }))}
+                placeholder="3 pagini / 2 anexe"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleCreateEntry} disabled={isReadOnlyUser}>
+              <FilePlus2 className="mr-2 h-4 w-4" />
+              Save Entry
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

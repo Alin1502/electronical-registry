@@ -14,7 +14,6 @@ import {
 } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleManager } from "@/components/registry/RoleManager";
 import type { RoleEntity } from "@/types/registry"; 
 import {
@@ -47,14 +46,15 @@ function EntityManager({
 }) {
   const [value, setValue] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{title}</CardTitle>
-        <Badge>{items.length}</Badge>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex gap-2">
+    <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+        <Badge variant="secondary" className="font-normal">{items.length}</Badge>
+      </div>
+      <div className="p-5">
+        <div className="mb-5 flex gap-2">
           <Input placeholder={`Add ${title.toLowerCase()}...`} value={value} onChange={(event) => setValue(event.target.value)} />
           <Button
             onClick={async () => {
@@ -70,17 +70,17 @@ function EntityManager({
 
         <div className="space-y-2">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+            <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-transparent hover:border-border hover:bg-muted/30 p-2 transition-colors">
               {editingId === item.id ? (
-                <Input defaultValue={item.name} onBlur={(event) => onUpdate(item.id, event.target.value.trim())} />
+                <Input defaultValue={item.name} onBlur={(event) => onUpdate(item.id, event.target.value.trim())} autoFocus />
               ) : (
-                <span className="text-sm font-medium">{item.name}</span>
+                <span className="text-sm font-medium pl-1">{item.name}</span>
               )}
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setEditingId(item.id)}>Edit</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingId(item.id)}>Edit</Button>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="danger">
+                    <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -99,8 +99,8 @@ function EntityManager({
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -137,32 +137,24 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="bg-gradient-to-br from-red-50 to-orange-50">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Administration</p>
-            <h1 className="mt-2 text-2xl font-semibold">Admin Panel</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Manage organization, departments, roles and users.</p>
-          </CardContent>
-        </Card>
+    <div className="space-y-8">
+      {/* 1. Flattened Header */}
+      <section className="flex flex-col gap-1 border-b border-border pb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Admin Panel</h1>
+        <p className="text-sm text-muted-foreground">Manage organization, departments, roles and users.</p>
       </section>
 
       {!isAdmin ? (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">
-              You have read-only access, so some admin management actions are hidden.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-md border border-border bg-muted/30 p-5 text-sm text-muted-foreground">
+          You have read-only access, so some admin management actions are hidden.
+        </div>
       ) : null}
 
       <div className="space-y-6">
         {isAdmin ? <InviteUserForm roles={roles} /> : null}
-        <div className="grid gap-6 lg:grid-cols-2">
+        
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
           <div className="space-y-6">
-            {isAdmin ? <ChartUpload onImported={loadAll} /> : null}
             <EntityManager
               title="Departments"
               items={departments}
@@ -185,7 +177,10 @@ export default function AdminPage() {
                 await loadAll();
               }}
             />
-
+            {isAdmin ? <ChartUpload onImported={loadAll} /> : null}
+          </div>
+          
+          <div className="space-y-6">
             <RoleManager
               items={roles}
               onCreate={async (name, permissionLevel) => {

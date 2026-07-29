@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-
-from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from core.database import get_db
@@ -14,6 +14,9 @@ from core.permissions import require_admin_access
 from schemas.admin import AdminStatsResponse, RecentActivityItem
 from services.s3 import get_file_size_from_s3
 router = APIRouter()
+
+class RoleUpdateRequest(BaseModel):
+    role_id: int | None
 
 @router.get("/stats", response_model=AdminStatsResponse)
 def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
@@ -142,3 +145,68 @@ def get_company_users(db: Session = Depends(get_db), current_user: dict = Depend
         })
     
     return result
+
+@router.delete("/users/{user_id}")
+def remove_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only the admin can remove users")
+
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot remove yourself")
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.company_id == current_user["company_id"])
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_owner:
+        raise HTTPException(status_code=403, detail="Cannot remove the admin")
+
+    # Preserve company records — detach them from the user being removed
+    db.query(DocumentEntry).filter(DocumentEntry.user_id == user_id).update(
+        {DocumentEntry.user_id: None}
+    )
+    db.query(UploadedFile).filter(UploadedFile.user_id == user_id).update(
+        {UploadedFile.user_id: None}
+    )
+
+    db.delete(user)
+    db.commit()
+    return {"detail": "User removed"}
+
+@router.patch("/users/{user_id}/role")
+def update_user_role(
+    user_id: int,
+    payload: RoleUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only the admin can change roles")
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.company_id == current_user["company_id"])
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_owner:
+        raise HTTPException(status_code=403, detail="Cannot change the admin's role")
+
+    if payload.role_id is not None:
+        role = db.query(Role).filter(Role.id == payload.role_id).first()
+        if not role:
+            raise HTTPException(status_code=404, detail="Role not found")
+
+    user.role_id = payload.role_id
+    db.commit()
+    return {"detail": "Role updated"}

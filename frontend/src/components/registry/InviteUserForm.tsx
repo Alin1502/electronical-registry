@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { createInvite } from "@/api/client";
 import { useAuthStore } from "@/store/authStore";
@@ -30,20 +29,21 @@ export function InviteUserForm({ roles }: { roles: NamedEntity[] }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Invite a Team Member</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+      <div className="px-5 py-4 border-b border-border bg-muted/20">
+        <h3 className="text-sm font-medium text-foreground">Invite a Team Member</h3>
+      </div>
+      <div className="p-5">
         <div className="flex flex-col gap-3 md:flex-row">
           <Input
             type="email"
             placeholder="colleague@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="md:flex-1"
           />
           <select
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
           >
@@ -57,7 +57,7 @@ export function InviteUserForm({ roles }: { roles: NamedEntity[] }) {
             {sending ? "Sending..." : "Send Invite"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

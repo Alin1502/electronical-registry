@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getAdminStats, getEntries } from "@/api/client";
+import { getAdminStats, getEntries, getCompanyUsers } from "@/api/client";
 import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DocumentVolumeChart } from "@/components/dashboard/DocumentVolumeChart";
@@ -9,7 +9,6 @@ import { StatusDistributionChart } from "@/components/dashboard/StatusDistributi
 import { EntriesPerRegistryChart } from "@/components/dashboard/EntriesPerRegistryChart";
 import { ProcessingThroughputChart } from "@/components/dashboard/ProcessingThroughputChart";
 import { OperatorActivity } from "@/components/dashboard/OperatorActivity";
-import { Card, CardContent } from "@/components/ui/card";
 import { useAuthStore } from "@/store/authStore";
 import type { AdminStats } from "@/types/registry";
 import type { DocumentEntry } from "@/types/registry";
@@ -41,6 +40,7 @@ export default function RegistryPage() {
   const { token, user } = useAuthStore();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [allEntries, setAllEntries] = useState<DocumentEntry[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
 
   useEffect(() => {
@@ -50,24 +50,28 @@ export default function RegistryPage() {
     }
     void loadAllData();
   }, [token, navigate]);
+
   useEffect(() => {
     // If they aren't an admin/owner, kick them to /records immediately
     if (user && !user.is_owner && user.permission_level !== "full_access") {
       navigate("/records", { replace: true });
     }
   }, [user, navigate]);
+
   async function loadAllData() {
     if (!token) return;
     setLoadingEntries(true);
     try {
-      const [adminStats, registryEntries] = await Promise.all([
+      const [adminStats, registryEntries, fetchedUsers] = await Promise.all([
         getAdminStats(token),
         Promise.all(REGISTRY_TYPES.map((register) => getEntries(token, register))),
+        getCompanyUsers(token) 
       ]);
 
       const allRegisterEntries = registryEntries.flat();
       setStats(adminStats);
       setAllEntries(allRegisterEntries);
+      setUsersList(fetchedUsers); 
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load registry data");
     } finally {
@@ -76,14 +80,17 @@ export default function RegistryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-2">
-        <p className="text-sm text-muted-foreground">Registry Overview</p>
-        <h1 className="text-2xl font-semibold">{user?.company_name ?? "Registry"}</h1>
-        <p className="text-sm text-muted-foreground">Operational snapshot across your registries.</p>
+    <div className="space-y-8">
+      {/*Flattened Header */}
+      <section className="flex flex-col gap-1 border-b border-border pb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Registry Overview</h1>
+        <p className="text-sm text-muted-foreground">
+          Analytics <span className="font-medium text-foreground">{user?.company_name ?? "your company"}</span>
+        </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      {/*Unified Stats Panel */}
+      <section className="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x border border-border bg-background rounded-md overflow-hidden">
         <StatCard
           title="Total Entries"
           value={<AnimatedCounter value={stats?.total_entries ?? allEntries.length} />}
@@ -103,11 +110,11 @@ export default function RegistryPage() {
         />
       </section>
 
-      {/* Analytics Section */}
+      {/*Analytics Grid*/}
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold">Analytics Overview</h2>
+        <h2 className="text-lg font-medium text-foreground">Analytics Overview</h2>
         {loadingEntries ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">Loading analytics...</div>
+          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading analytics...</div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             <DocumentVolumeChart entries={allEntries} />
@@ -118,7 +125,7 @@ export default function RegistryPage() {
         )}
       </div>
 
-      <OperatorActivity entries={allEntries} />
+      <OperatorActivity entries={allEntries} users={usersList} />
     </div>
   );
 }
