@@ -9,6 +9,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
+import SecureDocumentsPage from "@/pages/SecureDocumentsPage";
 import { useAuthStore } from "@/store/authStore";
 import { isTokenValid } from "@/lib/auth";
 import AcceptInvitePage from "@/pages/AcceptInvitePage";
@@ -74,6 +75,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/secure-documents"
+          element={
+            <ProtectedRoute>
+              <SecureDocumentsPage />
             </ProtectedRoute>
           }
         />

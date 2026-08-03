@@ -16,3 +16,4 @@ easyocr
 Pillow
 numpy
 opencv-python-headless
+cryptography

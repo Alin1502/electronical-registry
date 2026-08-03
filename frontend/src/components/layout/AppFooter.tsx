@@ -19,8 +19,8 @@ export function AppFooter() {
           <h4 className="mb-3 text-sm font-semibold">Quick Links</h4>
           <div className="space-y-2 text-sm text-muted-foreground">
             <Link className="block hover:text-foreground" to="/">Home</Link>
-            <Link className="block hover:text-foreground" to="/registry">Registry</Link>
-            <Link className="block hover:text-foreground" to="/admin">Admin</Link>
+            <Link className="block hover:text-foreground" to="/">Terms and Conditions</Link>
+            <Link className="block hover:text-foreground" to="/">Admin</Link>
           </div>
         </div>
 

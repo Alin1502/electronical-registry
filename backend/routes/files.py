@@ -71,7 +71,10 @@ def list_files(db: Session = Depends(get_db), current_user: dict = Depends(get_c
     return (
         db.query(UploadedFile)
         .join(User, User.id == UploadedFile.user_id)
-        .filter(User.company_id == current_user['company_id'])
+        .filter(
+            User.company_id == current_user['company_id'],
+            UploadedFile.is_secure_document.is_(False),
+        )
         .all()
     )
 
@@ -83,6 +86,8 @@ def download_file(file_id: int, db: Session = Depends(get_db), current_user: dic
         .filter(
             UploadedFile.id == file_id,
             User.company_id == current_user['company_id']
+            ,
+            UploadedFile.is_secure_document.is_(False),
         )
         .first()
     )
@@ -90,7 +95,7 @@ def download_file(file_id: int, db: Session = Depends(get_db), current_user: dic
         raise HTTPException(status_code=404, detail="File not found or unauthorized")
 
     try:
-        url = generate_download_url(file_record.s3_key)
+        url = generate_download_url(file_record.s3_key, filename=file_record.filename)
         return {"download_url": url}
     except ClientError as e:
         raise HTTPException(status_code=500, detail=f"Could not generate link: {str(e)}")
@@ -109,6 +114,8 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
     )
     if not file_record:
         raise HTTPException(status_code=404, detail="File not found or unauthorized")
+    if file_record.is_secure_document and not (current_user["is_owner"] or current_user["permission_level"] == "full_access"):
+        raise HTTPException(status_code=403, detail="Admin access required")
 
     try:
         delete_file_from_s3(file_record.s3_key)
@@ -137,6 +144,7 @@ def download_all_files(register_type: str,db: Session = Depends(get_db),current_
         .filter(
             User.company_id == current_user["company_id"],
             UploadedFile.register_type == register_type,
+            UploadedFile.is_secure_document.is_(False),
         )
         .all()
     )

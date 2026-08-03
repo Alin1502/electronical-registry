@@ -115,3 +115,9 @@ export interface User {
 export type DownloadResponse = {
   download_url: string;
 };
+
+export interface SecureDocumentUploadResponse {
+  file_id: number;
+  filename: string;
+  access_code: string;
+}

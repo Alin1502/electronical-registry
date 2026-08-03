@@ -1,4 +1,4 @@
-import { BarChart3, Building2, FileStack, Home, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Building2, FileStack, Home, KeyRound, Settings, ShieldCheck, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -11,6 +11,7 @@ const navigationItems = [
   { to: "/", label: "Home", icon: Home, end: true },
   { to: "/registry", label: "Registry", icon: FileStack, end: true },
   { to: "/records", label: "Records", icon: Building2, end: true },
+  { to: "/secure-documents", label: "Secure Docs", icon: KeyRound, end: true },
   { to: "/reports", label: "Reports", icon: BarChart3, end: true },
   { to: "/users", label: "Users", icon: Users, end: true },
   { to: "/admin", label: "Admin", icon: ShieldCheck, end: true },

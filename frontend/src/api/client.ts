@@ -8,6 +8,7 @@ import type {
   NextNumberResponse,
   UploadedFile,
   HistoryEvent,
+  SecureDocumentUploadResponse,
 } from "@/types/registry";
 import type { RoleEntity } from "@/types/registry";
 const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -28,6 +29,13 @@ async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   return data as T;
+}
+
+function parseFilenameFromDisposition(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition);
+  const encoded = match?.[1] ?? match?.[2];
+  return encoded ? decodeURIComponent(encoded) : null;
 }
 
 export function loginUser(username: string, password: string) {
@@ -72,6 +80,43 @@ export function getDownloadUrl(token: string, fileId: number) {
   return jsonRequest<{ download_url: string }>(`${BASE}/files/download/${fileId}`, {
     headers: authHeaders(token),
   });
+}
+
+export async function uploadSecureDocument(token: string, file: File, registerType = "secure-documents", code?: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("register_type", registerType);
+  if (code?.trim()) {
+    formData.append("code", code.trim());
+  }
+
+  return jsonRequest<SecureDocumentUploadResponse>(`${BASE}/secure-documents/upload`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: formData,
+  });
+}
+
+export async function accessSecureDocument(token: string, code: string) {
+  const response = await fetch(`${BASE}/secure-documents/access`, {
+    method: "POST",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to unlock secure file");
+  }
+
+  const blob = await response.blob();
+  return {
+    blob,
+    filename: parseFilenameFromDisposition(response.headers.get("content-disposition")) ?? "secure-document.pdf",
+  };
 }
 
 export function getEntries(token: string, registerType: string) {

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.database import Base, engine
 from core.migrations import ensure_uploaded_file_size_column
 import models.user, models.file, models.entry
-from routes import auth, files, entries, roles, departments, admin, invites
+from routes import auth, files, entries, roles, departments, admin, invites, secure_documents
 
 Base.metadata.create_all(bind=engine)
 ensure_uploaded_file_size_column(engine)
@@ -29,3 +29,4 @@ app.include_router(roles.router, prefix="/roles", tags=["roles"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
 app.include_router(departments.router, prefix="/departments", tags=["departments"])
 app.include_router(invites.router, prefix="/invites", tags=["invites"])
+app.include_router(secure_documents.router, prefix="/secure-documents", tags=["secure-documents"])
