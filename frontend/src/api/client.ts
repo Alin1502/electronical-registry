@@ -97,6 +97,22 @@ export function createEntry(token: string, entry: EntryPayload) {
   });
 }
 
+export async function updateEntryStatus(token: string, entryId: number, status: "validated" | "rejected"): Promise<void> {
+  const response = await fetch(`${BASE}/entries/${entryId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+  
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to update entry status");
+  }
+}
+
 export async function downloadExcel(token: string, registerType: string) {
   const response = await fetch(`${BASE}/entries/${encodeURIComponent(registerType)}/excel`, {
     headers: authHeaders(token),
@@ -316,4 +332,14 @@ export async function updateUserRole(token: string, userId: number, roleId: numb
     const data = await response.json().catch(() => ({}));
     throw new Error(data.detail || "Failed to update user role");
   }
+}
+
+export async function getPendingNotifications(token: string) {
+  const response = await fetch(`${BASE}/entries/pending`, { 
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch pending notifications");
+  }
+  return response.json();
 }

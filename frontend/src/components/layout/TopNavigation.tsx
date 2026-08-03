@@ -1,6 +1,6 @@
 import { Bell, Menu, Moon, Search, Sun, UserCircle2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+
+import { getPendingNotifications } from "@/api/client";
+import { NotificationBell, type PendingNotification } from "./NotificationBell"; 
 
 const publicLinks = [
   { label: "Home", to: "/" },
@@ -30,6 +33,33 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
   const navigate = useNavigate();
   const { user, token, logout } = useAuthStore();
 
+  const [notifications, setNotifications] = useState<PendingNotification[]>([]);
+  
+  // Check if the logged-in user is an admin
+  const isAdmin = user?.permission_level === "full_access" || user?.is_owner;
+
+  useEffect(() => {
+    // Only run the fetch if they are logged in AND are an admin
+    if (!token || !isAdmin) return;
+
+    async function fetchNotifications() {
+      try {
+        const data = await getPendingNotifications(token);
+        setNotifications(data);
+      } catch (error) {
+        console.error("Failed to load notifications", error);
+      }
+    }
+
+    // Fetch immediately on load
+    fetchNotifications();
+    
+    // Poll every 30 seconds for new validation requests
+    const intervalId = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(intervalId);
+    
+  }, [token, isAdmin]);
+
   const initials = useMemo(() => {
     const text = user?.company_name ?? user?.sub ?? "RG";
     return text
@@ -41,10 +71,8 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      {/* Replaced 'container' with 'w-full px-6' for an edge-to-edge layout inside the flex pane */}
       <div className="flex h-16 w-full items-center gap-4 px-6">
         
-        {/* The Hamburger Menu Toggle (Only visible if logged in) */}
         {token && (
           <Button variant="ghost" size="icon" className="shrink-0" onClick={onToggleSidebar}>
             <Menu className="h-5 w-5" />
@@ -52,7 +80,6 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
         )}
 
         <Link to="/" className="flex items-center gap-3">
-          {/* Removed AI gradient and shadow. Just a clean logo wrapper now. */}
           <div className="flex h-8 w-8 items-center justify-center">
             <img src="/REGIX_LOGO.png" alt="Regix Logo" className="h-full w-full object-contain" />
           </div>
@@ -90,17 +117,13 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          {/* notification */}
-          {token ? (
-            <Button variant="ghost" size="icon"> 
-              <Bell className="h-5 w-5" />
-            </Button>
+          {token && isAdmin ? (
+            <NotificationBell notifications={notifications} />
           ) : null}
 
           {token ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                {/* Removed hover:shadow-soft and heavy background colors to flatten the UI */}
                 <button className="flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-left transition hover:bg-muted">
                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-secondary-foreground">
                     {initials}

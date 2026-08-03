@@ -19,6 +19,18 @@ class EntryResponse(EntryCreate):
     id: int
     user_id: int
     created_at: datetime
+    status: str  # <-- Added this line
 
     class Config:
         from_attributes = True
+
+class StatusUpdate(BaseModel):
+    status: str
+
+class PendingNotificationResponse(BaseModel):
+    id: int
+    entry_id: int
+    username: str
+    register_type: str
+    created_at: datetime
+    nr_inregistrare: str

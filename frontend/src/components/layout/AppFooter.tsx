@@ -43,7 +43,7 @@ export function AppFooter() {
         </div>
       </div>
       <div className="container mt-8 border-t border-border/70 pt-6 text-xs text-muted-foreground">
-        Copyright © {new Date().getFullYear()} Premium Registratura. All rights reserved.
+        Copyright © {new Date().getFullYear()} Regix. All rights reserved.
       </div>
     </footer>
   );

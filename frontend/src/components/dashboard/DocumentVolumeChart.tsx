@@ -41,14 +41,23 @@ export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVol
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis dataKey="month" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
             <YAxis fontSize={12} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} />
-            <Tooltip 
-              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
-              cursor={{ fill: "rgba(0,0,0,0.02)" }} 
+            <Tooltip
+              cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                borderColor: "hsl(var(--border))",
+                borderRadius: "0.5rem",
+                color: "hsl(var(--foreground))",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+              }}
+              itemStyle={{
+                fontWeight: 500,
+              }}
             />
             <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />
-            <Bar dataKey="input" stackId="a" fill="#334155" name="Input" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="output" stackId="a" fill="#94a3b8" name="Output" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="internal" stackId="a" fill="#e2e8f0" name="Internal" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="input" stackId="a" fill="hsl(var(--chart-1))" name="Input" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="output" stackId="a" fill="hsl(var(--chart-2))" name="Output" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="internal" stackId="a" fill="hsl(var(--chart-3))" name="Internal" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -57,6 +57,7 @@ export interface DocumentEntry {
   mod_rezolvare: string;
   nr_pag_anexe: string;
   file_id?: number | null;
+  status: string;
 }
 
 export interface EntryPayload {

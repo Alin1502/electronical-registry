@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Download, FilePlus2, FileText, Link2, Trash2, UploadCloud } from "lucide-react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { Download, FilePlus2, FileText, Link2, Trash2, UploadCloud, FileQuestion } from "lucide-react";
 import { toast } from "sonner";
 import {
   createEntry,
@@ -13,6 +13,7 @@ import {
   getNextNr,
   removeFile,
   uploadFile,
+  updateEntryStatus,
 } from "@/api/client";
 import { AdvancedFilterPanel, type RegistryFilters } from "@/components/registry/AdvancedFilterPanel";
 import { RegistryRoomsTable } from "@/components/registry/RegistryRoomsTable";
@@ -76,6 +77,7 @@ export default function RecordsPage() {
   const navigate = useNavigate();
   const { register } = useParams();
   const { token, user } = useAuthStore();
+  const isAdmin = user?.is_owner;
   const isReadOnlyUser = user?.permission_level === "read";
 
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
@@ -92,9 +94,10 @@ export default function RecordsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkedFileName, setLinkedFileName] = useState<string>("");
 
-  const activeRegister = REGISTERS.includes(register as (typeof REGISTERS)[number])
-    ? (register as (typeof REGISTERS)[number])
-    : null;
+  const location = useLocation();
+  const activeRegister = register as (typeof REGISTERS)[number];
+  const isValidRegister = REGISTERS.includes(register as (typeof REGISTERS)[number]);
+
 
   useEffect(() => {
     if (!token) {
@@ -106,6 +109,15 @@ export default function RecordsPage() {
       navigate("/records", { replace: true });
     }
   }, [activeRegister, navigate, register, token]);
+
+  useEffect(() => {
+    if (location.state && location.state.targetSearch) {
+      setFilters(prev => ({ ...prev, search: location.state.targetSearch }));
+      
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
 
   useEffect(() => {
     if (!token || !activeRegister) return;
@@ -251,8 +263,9 @@ export default function RecordsPage() {
     }
   }
 
-  // --- RENDERING NO ACTIVE REGISTER ---
-  if (!activeRegister) {
+  // 1. STATE ONE: The user is at the root directory (e.g., /registry)
+  // 'register' is undefined, so we show your existing RegistryRoomsTable.
+  if (!register) {
     return (
       <div className="space-y-8">
         <section className="flex flex-col gap-1 border-b border-border pb-6">
@@ -264,6 +277,24 @@ export default function RecordsPage() {
     );
   }
 
+  // 2. STATE TWO: The user typed something, but it's mischievous or a typo (e.g., /registry/batman)
+  // It's not undefined, but it's not in our array. Show the Not Found error.
+  
+  if (!isValidRegister) {
+    return (
+      <div className="flex h-[60vh] w-full flex-col items-center justify-center space-y-4 text-center">
+        {/* Make sure you import { FileQuestion } from "lucide-react" */}
+        <FileQuestion className="h-16 w-16 text-muted-foreground opacity-50" />
+        <h2 className="text-2xl font-semibold text-foreground">Register Not Found</h2>
+        <p className="max-w-md text-sm text-muted-foreground">
+          The registry you are looking for "{register}" does not exist, or you might have a typo in the URL.
+        </p>
+        <Button onClick={() => navigate("/registry")} variant="outline" className="mt-4">
+          Return to Registry
+        </Button>
+      </div>
+    );
+  }
   // --- RENDERING ACTIVE REGISTER ---
   return (
     <div className="space-y-8">
@@ -398,7 +429,22 @@ export default function RecordsPage() {
         
         {/* The Table */}
         <div className="p-0">
-          <RegistryTable entries={entries} filters={filters} loading={loadingEntries} onDownloadFile={handleDownloadFile} />
+          <RegistryTable 
+            entries={entries} 
+            filters={filters} 
+            loading={loadingEntries} 
+            onDownloadFile={handleDownloadFile} 
+            onUpdateStatus={async (id, status) => {
+              if (!token) return;
+              try {
+                await updateEntryStatus(token, id, status);
+                toast.success(`Document marked as ${status}`);
+                await refreshData(activeRegister); // Refreshes the table
+              } catch (error) {
+                toast.error("Failed to update status");
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -502,7 +548,7 @@ export default function RecordsPage() {
             </DialogClose>
             <Button onClick={handleCreateEntry} disabled={isReadOnlyUser}>
               <FilePlus2 className="mr-2 h-4 w-4" />
-              Save Entry
+              {isAdmin ? "Save Entry" : "Submit for Validation"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from core.permissions import require_write_access
+from core.permissions import require_admin_access, require_write_access
 from core.database import get_db
 from core.security import get_current_user
 from models.entry import DocumentEntry
 from models.history import DocumentHistory
 from models.user import User
-from schemas.entry import EntryCreate, EntryResponse
+from schemas.entry import EntryCreate, EntryResponse, StatusUpdate, PendingNotificationResponse
 from typing import List
 import openpyxl
 from openpyxl.styles import Border, Side, Font, Alignment
@@ -33,6 +33,34 @@ FIELD_MAP = [
     "mod_rezolvare", "nr_pag_anexe"
 ]
 
+@router.get("/pending", response_model=List[PendingNotificationResponse])
+def get_pending_validations(
+    db: Session = Depends(get_db), 
+    current_user: dict = Depends(get_current_user)
+):
+    require_admin_access(current_user)
+    
+    # Perform a join to grab the document AND the user who uploaded it
+    pending_docs = db.query(DocumentEntry, User).join(
+        User, DocumentEntry.user_id == User.id
+    ).filter(
+        DocumentEntry.status == "pending"
+    ).all()
+    
+    # Format it for the frontend
+    results = []
+    for doc, user in pending_docs:
+        results.append({
+            "id": doc.id,
+            "entry_id": doc.id,
+            "username": user.username,
+            "register_type": doc.register_type,
+            "created_at": doc.created_at,
+            "nr_inregistrare": doc.nr_inregistrare
+        })
+        
+    return results
+
 @router.post("/", response_model=EntryResponse)
 def create_entry(
     entry: EntryCreate,
@@ -40,20 +68,62 @@ def create_entry(
     current_user: dict = Depends(get_current_user)
 ):
     require_write_access(current_user)
-    db_entry = DocumentEntry(**entry.model_dump(), user_id=current_user["id"])
+    
+    # Determine status based on role
+    # Assuming current_user dictionary holds 'permission_level'
+    initial_status = "validated" if current_user.get("permission_level") == "full_access" else "pending"
+    
+    #Inject the status into the database model
+    db_entry = DocumentEntry(**entry.model_dump(), user_id=current_user["id"], status=initial_status)
     db.add(db_entry)
     db.flush()  # assigns db_entry.id without ending the transaction
 
+    #Log the correct initial status in the history
     history_event = DocumentHistory(
         entry_id=db_entry.id,
         user_id=current_user["id"],
-        status="registered",
+        status=initial_status,
     )
     db.add(history_event)
 
     db.commit()
     db.refresh(db_entry)
     return db_entry
+
+@router.patch("/{entry_id}/status", response_model=EntryResponse)
+def update_entry_status(
+    entry_id: int,
+    payload: StatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    # Enforce that ONLY admins can change statuses
+    from core.permissions import require_admin_access
+    require_admin_access(current_user)
+
+    db_entry = db.query(DocumentEntry).filter(DocumentEntry.id == entry_id).first()
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+
+    # Prevent unnecessary database hits if status isn't changing
+    if db_entry.status == payload.status:
+        return db_entry
+
+    # Update the document's state
+    db_entry.status = payload.status
+
+    # Add the validation action to the audit history
+    history_event = DocumentHistory(
+        entry_id=db_entry.id,
+        user_id=current_user["id"],
+        status=payload.status,
+    )
+    db.add(history_event)
+
+    db.commit()
+    db.refresh(db_entry)
+    return db_entry
+
 
 @router.get("/next-nr/{register_type:path}")
 def get_next_nr(
@@ -79,6 +149,12 @@ def get_next_nr(
         "nr_inregistrare": f"{date_prefix}/{count_str}",
         "cod": f"{date_compact}{count_str}"
     }
+
+def sanitize_sheet_title(value: str) -> str:
+    invalid_chars = r'\/*?:[]'
+    cleaned = "".join(c for c in value if c not in invalid_chars)
+    return cleaned[:31] or "Sheet1"
+
 @router.get("/{register_type:path}/excel")
 def download_excel(
     register_type: str,
@@ -97,8 +173,7 @@ def download_excel(
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = register_type[:31]  # Excel tab name limit
-
+    ws.title = sanitize_sheet_title(register_type)
     num_cols = len(COLUMNS)
     mid = num_cols // 2
 

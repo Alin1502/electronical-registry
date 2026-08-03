@@ -27,4 +27,5 @@ class DocumentEntry(Base):
 
     file_id = Column(Integer, ForeignKey("files.id"), nullable=True)
     history = relationship("DocumentHistory", back_populates="entry", order_by="DocumentHistory.created_at",cascade="all, delete-orphan",
-)
+    )
+    status = Column(String, default="pending")

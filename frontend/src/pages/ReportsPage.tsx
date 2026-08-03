@@ -15,6 +15,7 @@ export default function ReportsPage() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
 
+
   useEffect(() => {
     if (!token) {
       navigate("/login");

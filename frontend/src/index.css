@@ -26,6 +26,9 @@
 		--danger: 355 34% 42%;
 		--danger-foreground: 0 0% 100%;
 		--radius: 0.625rem;
+		--chart-1: 220 10% 20%; /* Dark Charcoal */
+  		--chart-2: 220 10% 50%; /* Mid Gray */
+  		--chart-3: 220 10% 80%; /* Light Gray */
 	}
 
 	.dark {
@@ -48,6 +51,9 @@
 		--warning-foreground: 37 36% 12%;
 		--danger: 355 34% 62%;
 		--danger-foreground: 355 20% 12%;
+		--chart-1: 0 0% 100%;   /* Stark White */
+  		--chart-2: 220 10% 60%; /* Light Blue-Gray */
+ 		--chart-3: 220 10% 30%; /* Deep Blue-Gray */
 	}
 
 	* {
