@@ -48,7 +48,41 @@ export default function RegistryPage() {
       navigate("/login");
       return;
     }
+    let isActive = true;
+
+    async function loadAllData() {
+      setLoadingEntries(true);
+      try {
+        const [adminStats, registryEntries, fetchedUsers] = await Promise.all([
+          getAdminStats(token),
+          Promise.all(REGISTRY_TYPES.map((register) => getEntries(token, register))),
+          getCompanyUsers(token),
+        ]);
+
+        if (!isActive) return;
+
+        const allRegisterEntries = registryEntries.flat();
+        setStats(adminStats);
+        setAllEntries(allRegisterEntries);
+        setUsersList(fetchedUsers);
+      } catch (error) {
+        if (isActive) {
+          toast.error(error instanceof Error ? error.message : "Failed to load registry data");
+        }
+      } finally {
+        if (isActive) {
+          setLoadingEntries(false);
+        }
+      }
+    }
+
     void loadAllData();
+
+    const intervalId = window.setInterval(loadAllData, 30000);
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
   }, [token, navigate]);
 
   useEffect(() => {
@@ -57,27 +91,6 @@ export default function RegistryPage() {
       navigate("/records", { replace: true });
     }
   }, [user, navigate]);
-
-  async function loadAllData() {
-    if (!token) return;
-    setLoadingEntries(true);
-    try {
-      const [adminStats, registryEntries, fetchedUsers] = await Promise.all([
-        getAdminStats(token),
-        Promise.all(REGISTRY_TYPES.map((register) => getEntries(token, register))),
-        getCompanyUsers(token) 
-      ]);
-
-      const allRegisterEntries = registryEntries.flat();
-      setStats(adminStats);
-      setAllEntries(allRegisterEntries);
-      setUsersList(fetchedUsers); 
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load registry data");
-    } finally {
-      setLoadingEntries(false);
-    }
-  }
 
   return (
     <div className="space-y-8">

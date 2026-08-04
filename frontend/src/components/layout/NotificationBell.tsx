@@ -22,7 +22,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
   const unreadCount = notifications.length;
 
   function handleNotificationClick(notif: PendingNotification) {
-    navigate(`/records/${notif.register_type}`, {
+    navigate(`/records/${encodeURIComponent(notif.register_type)}`, {
       state: { 
         targetSearch: notif.nr_inregistrare 
       }
@@ -42,7 +42,6 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
       </button>
 
       {/* The Dropdown Menu (Triggered by hover) */}
-      {/* The pt-2 creates an invisible bridge so the hover doesn't break when moving the mouse down */}
       <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
         <div className="w-80 rounded-md border border-border bg-card shadow-lg overflow-hidden">
           {/* Header */}

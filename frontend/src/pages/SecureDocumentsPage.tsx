@@ -39,15 +39,14 @@ export default function SecureDocumentsPage() {
     try {
       const result = await accessSecureDocument(token, searchCode);
       const downloadUrl = URL.createObjectURL(result.blob);
-      const viewer = window.open(downloadUrl, "_blank", "noopener,noreferrer");
-
-      if (!viewer) {
-        URL.revokeObjectURL(downloadUrl);
-        throw new Error("Popup blocked. Allow popups to view the PDF.");
-      }
-
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
-      toast.success("Secure file opened");
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = result.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(downloadUrl);
+      toast.success("Secure file unlocked");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to unlock secure file");
     } finally {
@@ -110,7 +109,7 @@ export default function SecureDocumentsPage() {
               spellCheck={false}
             />
             <Button onClick={handleSearch} disabled={searching} className="w-full sm:w-auto">
-              {searching ? "Opening..." : "View PDF"}
+              {searching ? "Unlocking..." : "Unlock and download"}
             </Button>
           </div>
           <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">

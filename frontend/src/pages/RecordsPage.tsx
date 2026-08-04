@@ -88,6 +88,11 @@ export default function RecordsPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filters, setFilters] = useState<RegistryFilters>({ search: "", department: "", status: "" });
+  const [excelDialogOpen, setExcelDialogOpen] = useState(false);
+  const [excelUseEntirePeriod, setExcelUseEntirePeriod] = useState(true);
+  const [excelStartDate, setExcelStartDate] = useState("");
+  const [excelEndDate, setExcelEndDate] = useState("");
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [entryForm, setEntryForm] = useState<EntryPayload>(initialForm);
@@ -253,6 +258,43 @@ export default function RecordsPage() {
     }
   }
 
+  function resetExcelDialog() {
+    setExcelUseEntirePeriod(true);
+    setExcelStartDate("");
+    setExcelEndDate("");
+  }
+
+  async function handleDownloadExcel() {
+    if (!token) return;
+
+    if (!excelUseEntirePeriod) {
+      if (!excelStartDate || !excelEndDate) {
+        toast.error("Select both start and end dates, or select entire period");
+        return;
+      }
+
+      if (excelStartDate > excelEndDate) {
+        toast.error("Start date cannot be after end date");
+        return;
+      }
+    }
+
+    setExportingExcel(true);
+    try {
+      await downloadExcel(token, activeRegister, excelUseEntirePeriod ? undefined : {
+        startDate: excelStartDate,
+        endDate: excelEndDate,
+      });
+      toast.success("Excel downloaded");
+      setExcelDialogOpen(false);
+      resetExcelDialog();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Excel export failed");
+    } finally {
+      setExportingExcel(false);
+    }
+  }
+
   async function handleDownloadFile(fileId: number) {
     if (!token) return;
     try {
@@ -263,8 +305,7 @@ export default function RecordsPage() {
     }
   }
 
-  // 1. STATE ONE: The user is at the root directory (e.g., /registry)
-  // 'register' is undefined, so we show your existing RegistryRoomsTable.
+
   if (!register) {
     return (
       <div className="space-y-8">
@@ -277,13 +318,11 @@ export default function RecordsPage() {
     );
   }
 
-  // 2. STATE TWO: The user typed something, but it's mischievous or a typo (e.g., /registry/batman)
-  // It's not undefined, but it's not in our array. Show the Not Found error.
+
   
   if (!isValidRegister) {
     return (
       <div className="flex h-[60vh] w-full flex-col items-center justify-center space-y-4 text-center">
-        {/* Make sure you import { FileQuestion } from "lucide-react" */}
         <FileQuestion className="h-16 w-16 text-muted-foreground opacity-50" />
         <h2 className="text-2xl font-semibold text-foreground">Register Not Found</h2>
         <p className="max-w-md text-sm text-muted-foreground">
@@ -295,18 +334,16 @@ export default function RecordsPage() {
       </div>
     );
   }
-  // --- RENDERING ACTIVE REGISTER ---
   return (
     <div className="space-y-8">
-      {/* 1. Flattened Header */}
+      {/* Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
         <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
       </section>
 
-      {/* 2. Action Row (Upload & Export side-by-side) */}
+      {/*Action Row (Upload & Export side-by-side) */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Upload & Files (Takes up 2/3 of the row) */}
         <div className="lg:col-span-2 flex flex-col border border-border bg-background rounded-md overflow-hidden">
           <div className="px-5 py-4 border-b border-border bg-muted/20">
             <h3 className="text-sm font-medium text-foreground">Document Upload</h3>
@@ -367,13 +404,15 @@ export default function RecordsPage() {
           </div>
         </div>
 
-        {/* Exports (Takes up 1/3 of the row) */}
         <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
           <div className="px-5 py-4 border-b border-border bg-muted/20">
             <h3 className="text-sm font-medium text-foreground">Exports</h3>
           </div>
           <div className="p-5 space-y-3">
-            <Dialog>
+            <Dialog open={excelDialogOpen} onOpenChange={(open) => {
+              setExcelDialogOpen(open);
+              if (!open) resetExcelDialog();
+            }}>
               <DialogTrigger asChild>
                 <Button className="w-full" variant="outline">
                   Download Excel
@@ -382,15 +421,53 @@ export default function RecordsPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Generate Excel export</DialogTitle>
-                  <DialogDescription>Export all entries in current register to .xlsx format.</DialogDescription>
+                  <DialogDescription>Export all entries in the current register, or limit the export to a date range.</DialogDescription>
                 </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <label className="flex items-center gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={excelUseEntirePeriod}
+                      onChange={(event) => setExcelUseEntirePeriod(event.target.checked)}
+                      className="h-4 w-4 rounded border-border"
+                    />
+                    Entire period
+                  </label>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground" htmlFor="excel-start-date">
+                        Start date
+                      </label>
+                      <Input
+                        id="excel-start-date"
+                        type="date"
+                        value={excelStartDate}
+                        onChange={(event) => setExcelStartDate(event.target.value)}
+                        disabled={excelUseEntirePeriod}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground" htmlFor="excel-end-date">
+                        End date
+                      </label>
+                      <Input
+                        id="excel-end-date"
+                        type="date"
+                        value={excelEndDate}
+                        onChange={(event) => setExcelEndDate(event.target.value)}
+                        disabled={excelUseEntirePeriod}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <DialogFooter>
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={async () => {
-                      if (!token) return;
-                      await downloadExcel(token, activeRegister);
-                      toast.success("Excel downloaded");
-                    }}>Confirm</Button>
+                  <Button variant="outline" onClick={() => { setExcelDialogOpen(false); resetExcelDialog(); }}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleDownloadExcel} disabled={exportingExcel}>
+                    {exportingExcel ? "Generating..." : "Confirm"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -420,9 +497,8 @@ export default function RecordsPage() {
         </div>
       </div>
 
-      {/* 3. The Unified Data Section (Filters + Table) */}
+      {/*The Unified Data Section (Filters + Table) */}
       <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
-        {/* The Filters sit directly on top of the table now */}
         <div className="border-b border-border bg-muted/5">
           <AdvancedFilterPanel filters={filters} onChange={setFilters} />
         </div>

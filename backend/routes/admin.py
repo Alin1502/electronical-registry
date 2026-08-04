@@ -46,7 +46,7 @@ def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_cu
         .join(User, User.id == DocumentEntry.user_id)
         .filter(
             company_filter,
-            func.coalesce(func.trim(DocumentEntry.mod_rezolvare), "") == "",
+            DocumentEntry.status == "pending",
         )
         .scalar()
         or 0

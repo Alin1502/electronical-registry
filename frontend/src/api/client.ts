@@ -158,8 +158,17 @@ export async function updateEntryStatus(token: string, entryId: number, status: 
   }
 }
 
-export async function downloadExcel(token: string, registerType: string) {
-  const response = await fetch(`${BASE}/entries/${encodeURIComponent(registerType)}/excel`, {
+export async function downloadExcel(
+  token: string,
+  registerType: string,
+  options?: { startDate?: string; endDate?: string },
+) {
+  const searchParams = new URLSearchParams();
+  if (options?.startDate) searchParams.set("start_date", options.startDate);
+  if (options?.endDate) searchParams.set("end_date", options.endDate);
+
+  const query = searchParams.toString();
+  const response = await fetch(`${BASE}/entries/${encodeURIComponent(registerType)}/excel${query ? `?${query}` : ""}`, {
     headers: authHeaders(token),
   });
   if (!response.ok) throw new Error("Nu s-a putut descarca fisierul Excel");

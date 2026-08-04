@@ -158,18 +158,30 @@ def sanitize_sheet_title(value: str) -> str:
 @router.get("/{register_type:path}/excel")
 def download_excel(
     register_type: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    entries = (
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=400, detail="Start date cannot be after end date")
+
+    query = (
         db.query(DocumentEntry)
         .join(User, User.id == DocumentEntry.user_id)
         .filter(
             User.company_id == current_user["company_id"],
             DocumentEntry.register_type == register_type,
+            DocumentEntry.status != "rejected",
         )
-        .all()
     )
+
+    if start_date is not None:
+        query = query.filter(func.date(DocumentEntry.created_at) >= start_date)
+    if end_date is not None:
+        query = query.filter(func.date(DocumentEntry.created_at) <= end_date)
+
+    entries = query.all()
 
     wb = openpyxl.Workbook()
     ws = wb.active
