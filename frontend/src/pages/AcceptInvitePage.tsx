@@ -35,7 +35,7 @@ export default function AcceptInvitePage() {
   if (!token) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
-        <p className="text-sm text-muted-foreground">Invalid or missing invite link.</p>
+        <p className="text-sm text-muted-foreground">Link-ul pentru invitație este invalid sau nu există</p>
       </div>
     );
   }
@@ -44,8 +44,8 @@ export default function AcceptInvitePage() {
     <div className="mx-auto max-w-md py-16">
       <Card>
         <CardHeader>
-          <CardTitle>Accept Invitation</CardTitle>
-          <CardDescription>Create your account to join the team.</CardDescription>
+          <CardTitle>Acceptă invitația în echipă</CardTitle>
+          <CardDescription>Crează contul în cadrul organizației</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input placeholder="Choose a username" value={username} onChange={(e) => setUsername(e.target.value)} />

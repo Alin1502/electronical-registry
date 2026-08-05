@@ -48,3 +48,22 @@ def upload_chart_to_s3(file_bytes: bytes, user_id: int, content_type: str = "ima
         ContentType=content_type,
     )
     return key
+
+def upload_avatar_to_s3(file_bytes: bytes, user_id: int, content_type: str = "image/jpeg") -> str:
+    extension = "png" if content_type == "image/png" else "jpg"
+    key = f"avatars/{user_id}/{uuid.uuid4()}.{extension}"
+    s3_client.put_object(
+        Bucket=BUCKET_NAME,
+        Key=key,
+        Body=file_bytes,
+        ContentType=content_type,
+    )
+    return key
+
+
+def generate_avatar_url(s3_key: str, expires_in: int = 3600) -> str:
+    return s3_client.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': BUCKET_NAME, 'Key': s3_key},
+        ExpiresIn=expires_in,
+    )

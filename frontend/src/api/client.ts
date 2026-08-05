@@ -10,7 +10,7 @@ import type {
   HistoryEvent,
   SecureDocumentUploadResponse,
 } from "@/types/registry";
-import type { RoleEntity } from "@/types/registry";
+import type { RoleEntity, UserProfile } from "@/types/registry";
 const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 const authHeaders = (token: string): HeadersInit => ({
@@ -396,4 +396,50 @@ export async function getPendingNotifications(token: string) {
     throw new Error("Failed to fetch pending notifications");
   }
   return response.json();
+}
+
+export function getMyProfile(token: string) {
+  return jsonRequest<UserProfile>(`${BASE}/auth/me`, { headers: authHeaders(token) });
+}
+
+export function updateProfile(token: string, email: string) {
+  return jsonRequest<UserProfile>(`${BASE}/auth/profile`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function changePassword(token: string, currentPassword: string, newPassword: string) {
+  const response = await fetch(`${BASE}/auth/password`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to change password");
+  }
+}
+
+export async function uploadAvatar(token: string, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${BASE}/auth/avatar`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: formData,
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to upload avatar");
+  }
+  return response.json() as Promise<UserProfile>;
 }

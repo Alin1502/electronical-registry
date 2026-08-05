@@ -121,3 +121,13 @@ export interface SecureDocumentUploadResponse {
   filename: string;
   access_code: string;
 }
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  email: string | null;
+  avatar_url: string | null;
+  is_owner: boolean;
+  company_name: string;
+}
+

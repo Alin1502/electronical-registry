@@ -86,12 +86,12 @@ function EntityManager({
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Delete {title.slice(0, -1)}?</DialogTitle>
-                      <DialogDescription>This action cannot be undone.</DialogDescription>
+                      <DialogTitle>Șterge {title.slice(0, -1)}?</DialogTitle>
+                      <DialogDescription>Acțiunea este ireversibilă</DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                      <Button variant="outline">Cancel</Button>
-                      <Button variant="danger" onClick={() => onDelete(item.id)}>Confirm</Button>
+                      <Button variant="outline">Anulare</Button>
+                      <Button variant="danger" onClick={() => onDelete(item.id)}>Confirmă</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -138,15 +138,14 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-8">
-      {/* 1. Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Admin Panel</h1>
-        <p className="text-sm text-muted-foreground">Manage organization, departments, roles and users.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Panoul de control</h1>
+        <p className="text-sm text-muted-foreground">Gestionează organizația, departamentele, rolurile și utilizatorii.</p>
       </section>
 
       {!isAdmin ? (
         <div className="rounded-md border border-border bg-muted/30 p-5 text-sm text-muted-foreground">
-          You have read-only access, so some admin management actions are hidden.
+          Nu poți vedea tot conținutul deoarece nu ai permisiuni de administrator.
         </div>
       ) : null}
 

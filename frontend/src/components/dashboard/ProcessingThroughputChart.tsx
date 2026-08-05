@@ -7,14 +7,17 @@ interface ProcessingThroughputChartProps {
 
 export function ProcessingThroughputChart({ entries }: ProcessingThroughputChartProps) {
   // Aggregate by day
-  const dayData: Record<string, { created: number; processed: number }> = {};
+  const dayData: Record<string, { label: string; created: number; processed: number }> = {};
 
   entries.forEach((entry) => {
     const date = new Date(entry.created_at);
-    const dayKey = date.toLocaleDateString("ro-RO", { month: "short", day: "numeric" });
+    if (entry.status === "rejected") return;
+
+    const dayKey = date.toISOString().slice(0, 10);
+    const dayLabel = date.toLocaleDateString("ro-RO", { month: "short", day: "numeric" });
 
     if (!dayData[dayKey]) {
-      dayData[dayKey] = { created: 0, processed: 0 };
+      dayData[dayKey] = { label: dayLabel, created: 0, processed: 0 };
     }
 
     dayData[dayKey].created++;
@@ -26,7 +29,8 @@ export function ProcessingThroughputChart({ entries }: ProcessingThroughputChart
   });
 
   const chartData = Object.entries(dayData)
-    .map(([day, data]) => ({ day, ...data }))
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([, data]) => ({ day: data.label, created: data.created, processed: data.processed }))
     .slice(-14);
 
   return (
@@ -39,7 +43,14 @@ export function ProcessingThroughputChart({ entries }: ProcessingThroughputChart
             <XAxis dataKey="day" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
             <YAxis fontSize={12} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} />
             <Tooltip 
-              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--popover))",
+                borderRadius: "6px",
+                border: "1px solid hsl(var(--border))",
+                boxShadow: "none",
+              }}
+              labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+              itemStyle={{ color: "hsl(var(--popover-foreground))" }}
               cursor={{ stroke: "#e5e7eb", strokeWidth: 1, strokeDasharray: "3 3" }} 
             />
             <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />

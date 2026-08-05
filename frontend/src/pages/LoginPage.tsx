@@ -40,7 +40,7 @@ export default function LoginPage() {
       if (isRegister) {
         const result = await registerUser(form.username, form.company_name, form.password);
         if (result.message) {
-          toast.success("Account created. Please sign in.");
+          toast.success("Contul a fost creat cu succes. Vă puteți autentifica");
           setIsRegister(false);
           setForm({ username: "", password: "", company_name: "" });
           setErrors({});
@@ -50,7 +50,7 @@ export default function LoginPage() {
         const result = await loginUser(form.username, form.password);
         if (result.access_token) {
           setToken(result.access_token);
-          toast.success("Welcome back");
+          toast.success("Bine ați revenit");
           navigate("/registry");
           return;
         }
@@ -71,26 +71,24 @@ export default function LoginPage() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full max-w-[400px] flex flex-col items-center"
       >
-        {/* Minimalist Logo Area */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
             <Hexagon className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {isRegister ? "Create an account" : "Welcome back"}
+            {isRegister ? "Crează un cont nou" : "Bine ai revenit"}
           </h1>
           <p className="text-sm text-muted-foreground text-center">
             {isRegister 
-              ? "Enter your company details to provision a new workspace." 
-              : "Enter your credentials to access the electronic registry."}
+              ? "Introdu detaliile organizației pentru a începe" 
+              : "Introdu datele de autentificare pentru a accesa registrul electronic."}
           </p>
         </div>
 
-        {/* Flat Form Container */}
         <div className="w-full rounded-md border border-border bg-card p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Username</label>
+              <label className="text-sm font-medium text-foreground">Nume de utilizator</label>
               <div className="relative">
                 <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -112,7 +110,7 @@ export default function LoginPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-2 overflow-hidden"
                 >
-                  <label className="text-sm font-medium text-foreground">Company Name</label>
+                  <label className="text-sm font-medium text-foreground">Numele Companiei</label>
                   <div className="relative">
                     <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -129,10 +127,10 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">Password</label>
+                <label className="text-sm font-medium text-foreground">Parolă</label>
                 {!isRegister && (
                   <a href="#" className="text-xs font-medium text-primary hover:underline">
-                    Forgot password?
+                    Recuperare parolă
                   </a>
                 )}
               </div>
@@ -157,9 +155,8 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Toggle Mode */}
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          {isRegister ? "Already have an account? " : "Don't have an account? "}
+          {isRegister ? "Ai deja un cont? " : "Crează un cont nou "}
           <button 
             type="button" 
             onClick={() => {
@@ -168,7 +165,7 @@ export default function LoginPage() {
             }}
             className="font-medium text-primary hover:underline underline-offset-4"
           >
-            {isRegister ? "Sign in" : "Sign up"}
+            {isRegister ? "Autentificare" : "Înregistrare"}
           </button>
         </div>
       </motion.div>

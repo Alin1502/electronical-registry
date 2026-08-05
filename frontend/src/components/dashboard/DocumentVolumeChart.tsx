@@ -8,14 +8,17 @@ interface DocumentVolumeChartProps {
 
 export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVolumeChartProps) {
   // Aggregate entries by month and flow type
-  const monthData: Record<string, { input: number; output: number; internal: number }> = {};
+  const monthData: Record<string, { label: string; input: number; output: number; internal: number }> = {};
 
   entries.forEach((entry) => {
+    if (entry.status === "rejected") return;
+
     const date = new Date(entry.created_at);
-    const monthKey = date.toLocaleDateString("ro-RO", { month: "short", year: "2-digit" });
+    const monthKey = date.toISOString().slice(0, 7);
+    const monthLabel = date.toLocaleDateString("ro-RO", { month: "short", year: "2-digit" });
 
     if (!monthData[monthKey]) {
-      monthData[monthKey] = { input: 0, output: 0, internal: 0 };
+      monthData[monthKey] = { label: monthLabel, input: 0, output: 0, internal: 0 };
     }
 
     const flowType = entry.iesire_intrare?.toLowerCase() || "internal";
@@ -29,7 +32,8 @@ export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVol
   });
 
   const chartData = Object.entries(monthData)
-    .map(([month, data]) => ({ month, ...data }))
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([, data]) => ({ month: data.label, input: data.input, output: data.output, internal: data.internal }))
     .slice(-6);
 
   return (

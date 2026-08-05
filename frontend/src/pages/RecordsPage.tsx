@@ -149,7 +149,7 @@ export default function RecordsPage() {
       const data = await getDepartments(token);
       setDepartments(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load departments");
+      toast.error(error instanceof Error ? error.message : "Nu s-au putut încărca departamentele");
     }
   }
 
@@ -182,9 +182,9 @@ export default function RecordsPage() {
 
   function validateEntry(form: EntryPayload) {
     const next: Record<string, string> = {};
-    if (!form.rezumat.trim()) next.rezumat = "Summary is required";
-    if (!form.iesire_intrare.trim()) next.iesire_intrare = "Direction is required";
-    if (!form.repartizare_dpt.trim()) next.repartizare_dpt = "Department is required";
+    if (!form.rezumat.trim()) next.rezumat = "Rezumatul trebuie completat";
+    if (!form.iesire_intrare.trim()) next.iesire_intrare = "Direcția trebuie completată";
+    if (!form.repartizare_dpt.trim()) next.repartizare_dpt = "Departamentul trebuie completat";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -192,7 +192,7 @@ export default function RecordsPage() {
   async function handleCreateEntry() {
     if (!token) return;
     if (isReadOnlyUser) {
-      toast.error("Read-only users cannot create entries.");
+      toast.error("Nu ai atributele necesare pentru a adăuga documente. Contactează un administrator");
       return;
     }
     if (!validateEntry(entryForm)) return;

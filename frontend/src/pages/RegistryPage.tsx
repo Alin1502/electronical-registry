@@ -42,6 +42,7 @@ export default function RegistryPage() {
   const [allEntries, setAllEntries] = useState<DocumentEntry[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
+  const analyticsEntries = allEntries.filter((entry) => entry.status !== "rejected");
 
   useEffect(() => {
     if (!token) {
@@ -77,11 +78,8 @@ export default function RegistryPage() {
     }
 
     void loadAllData();
-
-    const intervalId = window.setInterval(loadAllData, 30000);
     return () => {
       isActive = false;
-      window.clearInterval(intervalId);
     };
   }, [token, navigate]);
 
@@ -94,15 +92,13 @@ export default function RegistryPage() {
 
   return (
     <div className="space-y-8">
-      {/*Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Registry Overview</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Prezentare generală</h1>
         <p className="text-sm text-muted-foreground">
-          Analytics <span className="font-medium text-foreground">{user?.company_name ?? "your company"}</span>
+          Statistici pentru <span className="font-medium text-foreground">{user?.company_name ?? "your company"}</span>
         </p>
       </section>
 
-      {/*Unified Stats Panel */}
       <section className="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x border border-border bg-background rounded-md overflow-hidden">
         <StatCard
           title="Total Entries"
@@ -123,22 +119,21 @@ export default function RegistryPage() {
         />
       </section>
 
-      {/*Analytics Grid*/}
       <div className="space-y-6">
-        <h2 className="text-lg font-medium text-foreground">Analytics Overview</h2>
+        <h2 className="text-lg font-medium text-foreground">Statisticile pentru documentele adăuugate</h2>
         {loadingEntries ? (
-          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading analytics...</div>
+          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Se încarcă...</div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
-            <DocumentVolumeChart entries={allEntries} />
-            <StatusDistributionChart entries={allEntries} />
-            <EntriesPerRegistryChart entries={allEntries} />
-            <ProcessingThroughputChart entries={allEntries} />
+            <DocumentVolumeChart entries={analyticsEntries} />
+            <StatusDistributionChart entries={analyticsEntries} />
+            <EntriesPerRegistryChart entries={analyticsEntries} />
+            <ProcessingThroughputChart entries={analyticsEntries} />
           </div>
         )}
       </div>
 
-      <OperatorActivity entries={allEntries} users={usersList} />
+      <OperatorActivity entries={analyticsEntries} users={usersList} />
     </div>
   );
 }

@@ -11,5 +11,6 @@ class User(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
     is_owner = Column(Boolean, default=False)
+    avatar_s3_key = Column(String, nullable=True)
 
     company = relationship("Company")

@@ -1,5 +1,6 @@
 import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Avatar from "@/components/ui/Avatar";
 import type { DocumentEntry, User } from "@/types/registry";
 
 interface OperatorActivityProps {
@@ -68,8 +69,12 @@ export function OperatorActivity({ entries, users }: OperatorActivityProps) {
             <div key={activity.userId} className="flex items-center justify-between rounded-md p-3 hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-medium text-muted-foreground capitalize">
-                    {displayName.substring(0, 1)}
+                  <div>
+                    <Avatar
+                      src={(users?.find((u) => u.id.toString() === activity.userId) as any)?.avatar_url ?? null}
+                      name={displayName}
+                      size={32}
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{displayName}</p>

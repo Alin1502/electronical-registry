@@ -20,3 +20,13 @@ def ensure_uploaded_file_size_column(engine) -> None:
             connection.execute(text("ALTER TABLE files ADD COLUMN encryption_salt VARCHAR(64)"))
         if "encryption_nonce" not in columns:
             connection.execute(text("ALTER TABLE files ADD COLUMN encryption_nonce VARCHAR(64)"))
+
+def ensure_user_profile_columns(engine) -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    with engine.begin() as connection:
+        if "avatar_s3_key" not in columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN avatar_s3_key VARCHAR(255)"))

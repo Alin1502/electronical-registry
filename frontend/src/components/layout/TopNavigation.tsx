@@ -139,7 +139,7 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
                   <p className="font-normal text-xs text-muted-foreground mt-1">{user?.company_name ?? "Companie"}</p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
                   <UserCircle2 className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>

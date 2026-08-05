@@ -5,7 +5,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-// --- Framer Motion Variants for Staggered Animations ---
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
