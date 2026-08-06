@@ -110,6 +110,7 @@ export interface User {
   username: string;
   permission_level: "full_access" | "read_write" | "read";
   is_owner: boolean;
+  avatar_url: string | null;
 }
 
 export type DownloadResponse = {

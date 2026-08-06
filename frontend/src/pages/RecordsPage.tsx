@@ -219,7 +219,7 @@ export default function RecordsPage() {
   async function handleUploadFile() {
     if (!token || !selectedFile) return;
     if (isReadOnlyUser) {
-      toast.error("Read-only users cannot upload PDFs.");
+      toast.error("Nu ai atributele necesare pentru a încărca PDF-uri");
       return;
     }
     setUploading(true);
@@ -237,11 +237,11 @@ export default function RecordsPage() {
 
       setLinkedFileName(selectedFile.name);
       setEntryModalOpen(true);
-      toast.success("PDF uploaded. Continue with entry details.");
+      toast.success("PDF-ul a fost adăugat. Adaugă detaliile rămase");
       setSelectedFile(null);
       await refreshData(activeRegister);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload failed");
+      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi încărcat");
     } finally {
       setUploading(false);
     }
@@ -254,7 +254,7 @@ export default function RecordsPage() {
       toast.success("File deleted");
       await refreshData(activeRegister);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
+      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi șters");
     }
   }
 
@@ -269,12 +269,12 @@ export default function RecordsPage() {
 
     if (!excelUseEntirePeriod) {
       if (!excelStartDate || !excelEndDate) {
-        toast.error("Select both start and end dates, or select entire period");
+        toast.error("Selectează intervalul de timp pentru a genera excel-ul");
         return;
       }
 
       if (excelStartDate > excelEndDate) {
-        toast.error("Start date cannot be after end date");
+        toast.error("Data de început nu poate fi după data finală");
         return;
       }
     }
@@ -285,11 +285,11 @@ export default function RecordsPage() {
         startDate: excelStartDate,
         endDate: excelEndDate,
       });
-      toast.success("Excel downloaded");
+      toast.success("Excel-ul a fost descărcat");
       setExcelDialogOpen(false);
       resetExcelDialog();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Excel export failed");
+      toast.error(error instanceof Error ? error.message : "Excel-ul nu a putut fi generat");
     } finally {
       setExportingExcel(false);
     }
@@ -301,7 +301,7 @@ export default function RecordsPage() {
       const result = await getDownloadUrl(token, fileId);
       window.open(result.download_url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Download failed");
+      toast.error(error instanceof Error ? error.message : "Descărcarea nu a putut fi efectuată");
     }
   }
 
@@ -310,8 +310,8 @@ export default function RecordsPage() {
     return (
       <div className="space-y-8">
         <section className="flex flex-col gap-1 border-b border-border pb-6">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Registry Selection</h1>
-          <p className="text-sm text-muted-foreground">Select a register type below to view and manage its entries.</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Selectarea registrelor</h1>
+          <p className="text-sm text-muted-foreground">Selectează un registru pentru a îl vedea sau modiifca</p>
         </section>
         <RegistryRoomsTable rooms={registryRooms} onSelectRoom={(roomCode) => navigate(`/records/${encodeURIComponent(roomCode)}`)} />
       </div>

@@ -3,16 +3,16 @@ import { toast } from "sonner";
 import { getMyProfile, updateProfile, changePassword, uploadAvatar } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { SettingsRow, SettingsGroup } from "@/components/settings/SettingsRow";
 import { useAuthStore } from "@/store/authStore";
 import type { UserProfile } from "@/types/registry";
-import { UserCircle, Camera, Save, KeyRound } from "lucide-react";
+import { UserCircle, Camera, Sun, Moon } from "lucide-react";
 
 export function ProfileSettings() {
-  const { token, setProfile: setAuthProfile } = useAuthStore();
+  const { token, theme, setTheme } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [profile, setLocalProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
@@ -33,11 +33,10 @@ export function ProfileSettings() {
     setLoading(true);
     try {
       const data = await getMyProfile(token);
-      setLocalProfile(data);
-      setAuthProfile?.(data ?? null);
+      setProfile(data);
       setEmail(data.email ?? "");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load profile");
+      toast.error(error instanceof Error ? error.message : "Profilul nu s-a încărcat");
     } finally {
       setLoading(false);
     }
@@ -48,11 +47,10 @@ export function ProfileSettings() {
     setSavingEmail(true);
     try {
       const updated = await updateProfile(token, email);
-      setLocalProfile(updated);
-      setAuthProfile?.(updated ?? null);
-      toast.success("Email updated");
+      setProfile(updated);
+      toast.success("Adresa de email actualizata");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update email");
+      toast.error(error instanceof Error ? error.message : "Adresa de email nu s-a actualizat");
     } finally {
       setSavingEmail(false);
     }
@@ -60,26 +58,25 @@ export function ProfileSettings() {
 
   async function handleAvatarSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    event.target.value = ""; // allow re-selecting the same file later
+    event.target.value = "";
     if (!file || !token) return;
 
     if (!["image/jpeg", "image/png"].includes(file.type)) {
-      toast.error("Only JPEG or PNG images are allowed");
+      toast.error("Doar format JPEG/PNG permis");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
+      toast.error("Dimensiunea maxima este de 5MB");
       return;
     }
 
     setUploadingAvatar(true);
     try {
       const updated = await uploadAvatar(token, file);
-      setLocalProfile(updated);
-      setAuthProfile?.(updated ?? null);
-      toast.success("Profile picture updated");
+      setProfile(updated);
+      toast.success("Poza de profil a fost actualizată");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to upload avatar");
+      toast.error(error instanceof Error ? error.message : "Poza de profil nu s-a actualizat");
     } finally {
       setUploadingAvatar(false);
     }
@@ -88,114 +85,134 @@ export function ProfileSettings() {
   async function handleChangePassword() {
     if (!token) return;
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters");
+      toast.error("Parola trebuie să aibă cel puțin 8 caractere");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
+      toast.error("Parola nu coincide. Verificați din nou");
       return;
     }
 
     setChangingPassword(true);
     try {
       await changePassword(token, currentPassword, newPassword);
-      toast.success("Password changed");
+      toast.success("Parola a fost schimbată");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to change password");
+      toast.error(error instanceof Error ? error.message : "Parola nu a putut fi schimbată");
     } finally {
       setChangingPassword(false);
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        Loading profile...
-      </div>
-    );
+    return <div className="py-12 text-sm text-muted-foreground">Profilul se încarcă...</div>;
   }
 
   if (!profile) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        Could not load profile.
-      </div>
-    );
+    return <div className="py-12 text-sm text-muted-foreground">Profilul nu a putut fi încărcat</div>;
   }
 
+  const emailUnchanged = email === (profile.email ?? "");
+  const passwordFormEmpty = !currentPassword && !newPassword && !confirmPassword;
+
   return (
-    <div className="space-y-6">
-      {/* Avatar + identity */}
-      <Card>
-        <CardContent className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:items-start">
-          <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/30">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username} className="h-full w-full object-cover" />
-              ) : (
-                <UserCircle className="h-12 w-12 text-muted-foreground" />
-              )}
-            </div>
+    <div className="divide-y divide-border">
+      <SettingsGroup>
+        <SettingsRow title="Aspect" description="Alegeți aspectul Regix pe dispozitivul dumneavoastră">
+          <div className="inline-flex rounded-md border border-border p-0.5">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-muted/50 disabled:opacity-50"
-              aria-label="Change profile picture"
+              onClick={() => setTheme("light")}
+              className={`flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-sm transition-colors ${
+                theme === "light"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <Camera className="h-3.5 w-3.5" />
+              <Sun className="h-3.5 w-3.5" />
+              Light
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png"
-              className="hidden"
-              onChange={handleAvatarSelect}
-            />
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              className={`flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-sm transition-colors ${
+                theme === "dark"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Moon className="h-3.5 w-3.5" />
+              Dark
+            </button>
           </div>
+        </SettingsRow>
 
-          <div className="flex-1 space-y-1 text-center sm:text-left">
-            <p className="text-lg font-semibold text-foreground">{profile.username}</p>
-            <p className="text-sm text-muted-foreground">{profile.company_name}</p>
-            {profile.is_owner && (
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin</p>
-            )}
-            {uploadingAvatar && <p className="text-xs text-muted-foreground">Uploading...</p>}
+        <SettingsRow title="Poza de profil" description="Vizibilă tuturor utilizatorilor">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/30">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.username} className="h-full w-full object-cover" />
+                ) : (
+                  <UserCircle className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-muted/50 disabled:opacity-50"
+                aria-label="Change profile picture"
+              >
+                <Camera className="h-3 w-3" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                className="hidden"
+                onChange={handleAvatarSelect}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{profile.username}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {uploadingAvatar ? "Uploading..." : "JPEG/PNG, maxim 5MB"}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsRow>
 
-      {/* Email */}
-      <Card>
-        <CardContent className="space-y-4 p-6">
-          <h3 className="text-sm font-semibold text-foreground">Email address</h3>
-          <div className="flex flex-col gap-3 sm:flex-row">
+        <SettingsRow title="Companie" description="Compania dumneavoastră">
+          <p className="text-sm text-foreground">{profile.company_name}</p>
+          {profile.is_owner && (
+            <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin</p>
+          )}
+        </SettingsRow>
+
+        <SettingsRow title="Adresa de Email" description="Pentru notificări și recuperare cont">
+          <div className="space-y-2">
             <Input
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="sm:max-w-sm"
             />
-            <Button onClick={handleSaveEmail} disabled={savingEmail || email === (profile.email ?? "")}>
-              <Save className="mr-2 h-4 w-4" />
-              {savingEmail ? "Saving..." : "Save"}
+            <Button size="sm" onClick={handleSaveEmail} disabled={savingEmail || emailUnchanged}>
+              {savingEmail ? "Se salvează..." : "Salvează"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsRow>
 
-      {/* Password */}
-      <Card>
-        <CardContent className="space-y-4 p-6">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <KeyRound className="h-4 w-4" />
-            Change password
-          </h3>
-          <div className="grid gap-3 sm:max-w-sm">
+        <SettingsRow
+          title="Parolă"
+          description="Folosiți o parolă de minimum 8 caractere"
+          divider={false}
+        >
+          <div className="space-y-2">
             <Input
               type="password"
               placeholder="Current password"
@@ -218,15 +235,15 @@ export function ProfileSettings() {
               autoComplete="new-password"
             />
             <Button
+              size="sm"
               onClick={handleChangePassword}
-              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className="w-fit"
+              disabled={changingPassword || passwordFormEmpty}
             >
-              {changingPassword ? "Updating..." : "Update password"}
+              {changingPassword ? "Se schimbă..." : "Schimbă parola"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsRow>
+      </SettingsGroup>
     </div>
   );
 }

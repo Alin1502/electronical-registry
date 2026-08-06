@@ -31,7 +31,7 @@ export default function ReportsPage() {
       const fileData = await getFiles(token);
       setFiles(fileData);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load files");
+      toast.error(error instanceof Error ? error.message : "Documentele nu au putut fi încărcate");
     } finally {
       setLoading(false);
     }
@@ -39,26 +39,24 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8">
-      {/* 1. Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">File Archive</h1>
-        <p className="text-sm text-muted-foreground">View and manage archived documents and reports.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Arhiva documentelor</h1>
+        <p className="text-sm text-muted-foreground">Vizualizează documentele și rapoartele</p>
       </section>
 
-      {/* 2. Unified List Container */}
       <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
         <div className="px-5 py-4 border-b border-border bg-muted/20 flex items-center gap-2">
           <Archive className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">All Archived Files</h3>
+          <h3 className="text-sm font-medium text-foreground">Lista tuturor documentelor arhivate</h3>
         </div>
         
         <div className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading files...</div>
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Se încarcă..</div>
           ) : files.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Archive className="mb-3 h-8 w-8 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground">No archived files yet.</p>
+              <p className="text-sm text-muted-foreground">Nicio arhivă prezentă</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -75,12 +73,12 @@ export default function ReportsPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Uploaded {formatDate(file.uploaded_at)}
+                      Data încărcării {formatDate(file.uploaded_at)}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" className="shrink-0 bg-background hover:bg-muted">
                     <Download className="mr-2 h-4 w-4" />
-                    Download
+                    Descarcă
                   </Button>
                 </div>
               ))}

@@ -31,7 +31,7 @@ export default function SecureDocumentsPage() {
   async function handleSearch() {
     if (!token) return;
     if (!searchCode.trim()) {
-      toast.error("Enter a secure code first");
+      toast.error("Introdu codul");
       return;
     }
 
@@ -48,7 +48,7 @@ export default function SecureDocumentsPage() {
       URL.revokeObjectURL(downloadUrl);
       toast.success("Secure file unlocked");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to unlock secure file");
+      toast.error(error instanceof Error ? error.message : "Fișierul securizat nu a putut fi accesat");
     } finally {
       setSearching(false);
     }
@@ -57,7 +57,7 @@ export default function SecureDocumentsPage() {
   async function handleUpload() {
     if (!token || !selectedFile) return;
     if (!isAdmin) {
-      toast.error("Admin access required");
+      toast.error("Nu ai permisiuni de admin");
       return;
     }
 
@@ -67,9 +67,9 @@ export default function SecureDocumentsPage() {
       setIssuedCode(result.access_code);
       setSelectedFile(null);
       setUploadCode("");
-      toast.success("Secure file encrypted");
+      toast.success("Fișierul a fost criptat");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload failed");
+      toast.error(error instanceof Error ? error.message : "Încărcarea a eșuat");
     } finally {
       setUploading(false);
     }
@@ -78,7 +78,7 @@ export default function SecureDocumentsPage() {
   async function copyIssuedCode() {
     if (!issuedCode) return;
     await navigator.clipboard.writeText(issuedCode);
-    toast.success("Code copied to clipboard");
+    toast.success("Codul a fost copiat");
   }
 
   return (
@@ -86,11 +86,11 @@ export default function SecureDocumentsPage() {
       <section className="flex flex-col gap-2 border-b border-border pb-6">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Lock className="h-4 w-4" />
-          <span className="text-xs font-medium uppercase tracking-[0.24em]">Protected archive</span>
+          <span className="text-xs font-medium uppercase tracking-[0.24em]">Arhivă accesibilă prin cod</span>
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Secure Documents</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Fișiere securizate</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-            Paste a verification code in order to access the file
+            Pentru a accesa un fișier, introdu codul aferent
         </p>
       </section>
 
@@ -98,22 +98,22 @@ export default function SecureDocumentsPage() {
         <section className="rounded-2xl border border-border bg-background p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-foreground" />
-            <h2 className="text-base font-semibold text-foreground">Unlock by code</h2>
+            <h2 className="text-base font-semibold text-foreground">Deblochează</h2>
           </div>
           <div className="space-y-4">
             <Input
-              placeholder="Paste secure code"
+              placeholder="Introdu codul"
               value={searchCode}
               onChange={(event) => setSearchCode(event.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
             <Button onClick={handleSearch} disabled={searching} className="w-full sm:w-auto">
-              {searching ? "Unlocking..." : "Unlock and download"}
+              {searching ? "Se deblochează..." : "Deblocheaază și descarcă"}
             </Button>
           </div>
           <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-            Access is checked on the server. The file stays encrypted in storage until a valid code is submitted.
+            Până la introducerea codului, fișierul rămâne criptat
           </div>
         </section>
 
@@ -121,7 +121,7 @@ export default function SecureDocumentsPage() {
           <section className="rounded-2xl border border-border bg-background p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-foreground" />
-              <h2 className="text-base font-semibold text-foreground">Encrypt a document</h2>
+              <h2 className="text-base font-semibold text-foreground">Criptează un fișier</h2>
             </div>
             <div className="space-y-4">
               <Input
@@ -130,7 +130,7 @@ export default function SecureDocumentsPage() {
                 onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
               />
               <Input
-                placeholder="Optional custom code, leave empty to generate one"
+                placeholder="Introdu un cod sigur sau lasă liber pentru a genera unul automat"
                 value={uploadCode}
                 onChange={(event) => setUploadCode(event.target.value)}
                 autoComplete="off"
@@ -138,19 +138,19 @@ export default function SecureDocumentsPage() {
               />
               <Button onClick={handleUpload} disabled={uploading || !selectedFile} className="w-full sm:w-auto">
                 <UploadCloud className="mr-2 h-4 w-4" />
-                {uploading ? "Encrypting..." : "Encrypt and upload"}
+                {uploading ? "Se criptează..." : "Încarcă și criptează"}
               </Button>
             </div>
 
             {issuedCode ? (
               <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-                <p className="text-sm font-medium text-foreground">Share this code with authorized users</p>
+                <p className="text-sm font-medium text-foreground">Împarte acest cod doar cu useri autorizați</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="font-mono tracking-[0.14em]">
                     {issuedCode}
                   </Badge>
                   <Button size="sm" variant="outline" onClick={copyIssuedCode}>
-                    Copy code
+                    Copiază
                   </Button>
                 </div>
               </div>

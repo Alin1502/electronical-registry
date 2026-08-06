@@ -26,7 +26,7 @@ export default function AcceptInvitePage() {
       toast.success("Account created");
       navigate("/registry");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to accept invite");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut accepta invitația");
     } finally {
       setSubmitting(false);
     }

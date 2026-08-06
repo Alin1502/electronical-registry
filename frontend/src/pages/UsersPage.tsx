@@ -78,7 +78,7 @@ export default function UsersPage() {
       setEntries(entriesData);
       setRoles(rolesData);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load data");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut încărca lista de utilizatori");
     } finally {
       setLoading(false);
     }
@@ -88,11 +88,11 @@ export default function UsersPage() {
     if (!token) return;
     try {
       await removeUser(token, userId);
-      toast.success("User access removed successfully.");
+      toast.success("Utilizatorul a fost șters");
       setActiveDialog({ type: null, userId: null });
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove user");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut șterge utilizatorul");
     }
   }
 
@@ -101,49 +101,47 @@ export default function UsersPage() {
     try {
       const roleId = selectedRole ? Number(selectedRole) : null;
       await updateUserRole(token, userId, roleId);
-      toast.success("User role updated successfully.");
+      toast.success("Funcția utilizatorului a fost modificat");
       setActiveDialog({ type: null, userId: null });
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update role");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut modifica funcția utilizatorului");
     }
   }
 
   return (
     <div className="space-y-8">
-      {/* Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Users & Activity</h1>
-        <p className="text-sm text-muted-foreground">Manage team members, roles, and system permissions.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Utilizatori și activitate</h1>
+        <p className="text-sm text-muted-foreground">Membrii echipei și permisiunile lor</p>
       </section>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading users...</div>
+        <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Se încarcă...</div>
       ) : (
         <div className="space-y-6">
-          {/* Flattened Table Container */}
           <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex items-center gap-2 text-sm font-medium text-foreground bg-muted/20">
               <Shield className="h-4 w-4 text-muted-foreground" />
-              Company Members ({users.length})
+              Membrii echipei({users.length})
             </div>
             
             <div className="p-0">
               {users.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Users className="mb-3 h-8 w-8 text-muted-foreground opacity-50" />
-                  <p className="text-sm text-muted-foreground">No users in this company yet.</p>
+                  <p className="text-sm text-muted-foreground">Nu există niciun utilizator adăugat</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border bg-muted/10">
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Username</th>
+                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Nume</th>
                         <th className="text-left py-3 px-5 font-medium text-muted-foreground">Email</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Role</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Permission</th>
-                        <th className="text-right py-3 px-5 font-medium text-muted-foreground">Actions</th>
+                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Funcție</th>
+                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Permisiuni</th>
+                        <th className="text-right py-3 px-5 font-medium text-muted-foreground">Actiuni</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -175,7 +173,6 @@ export default function UsersPage() {
                             </td>
                             <td className="py-3 px-5 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                {/* Edit Role Dialog */}
                                 <Dialog 
                                   open={activeDialog.type === "edit" && activeDialog.userId === u.id} 
                                   onOpenChange={(isOpen) => {
@@ -194,8 +191,8 @@ export default function UsersPage() {
                                   </DialogTrigger>
                                   <DialogContent>
                                     <DialogHeader>
-                                      <DialogTitle>Change User Role</DialogTitle>
-                                      <DialogDescription>Assign a new organizational role to {u.username}.</DialogDescription>
+                                      <DialogTitle>Schimbă funcția utilizatorului</DialogTitle>
+                                      <DialogDescription>Adaugă o funcție utilizatorului {u.username}.</DialogDescription>
                                     </DialogHeader>
                                     <div className="py-4">
                                       <select
@@ -203,20 +200,19 @@ export default function UsersPage() {
                                         value={selectedRole}
                                         onChange={(e) => setSelectedRole(e.target.value)}
                                       >
-                                        <option value="">No role (Basic Access)</option>
+                                        <option value="">Nicio funcție(Basic Access)</option>
                                         {roles.map((r) => (
                                           <option key={r.id} value={r.id}>{r.name}</option>
                                         ))}
                                       </select>
                                     </div>
                                     <DialogFooter>
-                                      <Button variant="outline" onClick={() => setActiveDialog({ type: null, userId: null })}>Cancel</Button>
-                                      <Button onClick={() => handleUpdateRole(u.id)}>Save Changes</Button>
+                                      <Button variant="outline" onClick={() => setActiveDialog({ type: null, userId: null })}>Anulează</Button>
+                                      <Button onClick={() => handleUpdateRole(u.id)}>Salvează</Button>
                                     </DialogFooter>
                                   </DialogContent>
                                 </Dialog>
 
-                                {/* Delete User Dialog */}
                                 <Dialog 
                                   open={activeDialog.type === "delete" && activeDialog.userId === u.id} 
                                   onOpenChange={(isOpen) => isOpen ? setActiveDialog({ type: "delete", userId: u.id }) : setActiveDialog({ type: null, userId: null })}
@@ -228,10 +224,10 @@ export default function UsersPage() {
                                   </DialogTrigger>
                                   <DialogContent>
                                     <DialogHeader>
-                                      <DialogTitle>Remove User Access?</DialogTitle>
+                                      <DialogTitle>Eliminare acces</DialogTitle>
                                       <DialogDescription>
-                                        Are you sure you want to remove <strong>{u.username}</strong> from the company? 
-                                        They will immediately lose access to all registries. Their previous uploads will be preserved for audit purposes.
+                                        Ești pe cale să ștergi utilizatorul <strong>{u.username}</strong> din companie 
+                                        Acesta își va pierde orice acces la orice fișier, dar documentele înregistrate vor rămâne în aplicație
                                       </DialogDescription>
                                     </DialogHeader>
                                     <DialogFooter>

@@ -12,7 +12,7 @@ from models.user import User
 from models.role import Role
 from core.permissions import require_admin_access
 from schemas.admin import AdminStatsResponse, RecentActivityItem
-from services.s3 import get_file_size_from_s3
+from services.s3 import get_file_size_from_s3, generate_avatar_url
 router = APIRouter()
 
 class RoleUpdateRequest(BaseModel):
@@ -134,7 +134,8 @@ def get_company_users(db: Session = Depends(get_db), current_user: dict = Depend
             if role:
                 role_name = role.name
                 permission_level = role.permission_level
-        
+
+        avatar_url = generate_avatar_url(user.avatar_s3_key) if user.avatar_s3_key else None
         result.append({
             "id": user.id,
             "username": user.username,
@@ -142,6 +143,7 @@ def get_company_users(db: Session = Depends(get_db), current_user: dict = Depend
             "is_owner": user.is_owner,
             "role": role_name,
             "permission_level": permission_level,
+            "avatar_url": avatar_url,
         })
     
     return result
