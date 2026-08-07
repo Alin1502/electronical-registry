@@ -1,5 +1,5 @@
 from core.database import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy import DateTime
 from datetime import datetime
@@ -24,6 +24,8 @@ class DocumentEntry(Base):
     repartizare_dpt = Column(String)
     mod_rezolvare = Column(String)
     nr_pag_anexe = Column(String)
+
+    custom_fields = Column(JSON, nullable=False, default=dict)
 
     file_id = Column(Integer, ForeignKey("files.id"), nullable=True)
     history = relationship("DocumentHistory", back_populates="entry", order_by="DocumentHistory.created_at",cascade="all, delete-orphan",

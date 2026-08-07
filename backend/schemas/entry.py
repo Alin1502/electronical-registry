@@ -13,6 +13,7 @@ class EntryCreate(BaseModel):
     repartizare_dpt: str
     mod_rezolvare: str
     nr_pag_anexe: str
+    custom_fields: dict = {}
     file_id: Optional[int] = None
 
 class EntryResponse(EntryCreate):

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProfileSettings } from "@/components/settings/ProfileSettings";
+import { RegisterTypeSettings } from "@/components/settings/RegisterTypeSettings";
 import { useAuthStore } from "@/store/authStore";
 
 type SettingsTab = "profile" | "records" | "company";
@@ -8,7 +9,7 @@ type SettingsTab = "profile" | "records" | "company";
 function ComingSoon({ label }: { label: string }) {
   return (
     <div className="py-16 text-center text-sm text-muted-foreground">
-      {label} în lucru.
+      {label} settings coming soon.
     </div>
   );
 }
@@ -63,7 +64,7 @@ export default function SettingsPage() {
 
       <div>
         {activeTab === "profile" && <ProfileSettings />}
-        {activeTab === "records" && isAdmin && <ComingSoon label="Setări registre" />}
+        {activeTab === "records" && isAdmin && <RegisterTypeSettings />}
         {activeTab === "company" && isAdmin && <ComingSoon label="Setări companie" />}
       </div>
     </div>

@@ -1,61 +1,120 @@
-import { useMemo, useState } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, FileText, CheckCircle2, XCircle, Clock, Check } from "lucide-react";
-import type { DocumentEntry } from "@/types/registry";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowUpDown, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, XCircle } from "lucide-react";
+import type { DocumentEntry, FieldConfigItem } from "@/types/registry";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDateTime } from "@/lib/utils";
 import type { RegistryFilters } from "@/components/registry/AdvancedFilterPanel";
 import { useAuthStore } from "@/store/authStore";
 
-type SortField = "nr_inregistrare" | "cod" | "repartizare_dpt" | "mod_rezolvare" | "status";
+const PAGE_SIZE = 7;
+const SAFE_SORT_FIELDS = new Set(["nr_inregistrare", "cod", "repartizare_dpt", "mod_rezolvare", "status"]);
+const ENTRY_COLUMN_KEYS = new Set([
+  "nr_inregistrare",
+  "cod",
+  "iesire_intrare",
+  "nr_data_emitent",
+  "nr_data_destinator",
+  "rezumat",
+  "repartizare_dpt",
+  "mod_rezolvare",
+  "nr_pag_anexe",
+] as const);
+
 type SortOrder = "asc" | "desc";
+type EntryColumnKey =
+  | "nr_inregistrare"
+  | "cod"
+  | "iesire_intrare"
+  | "nr_data_emitent"
+  | "nr_data_destinator"
+  | "rezumat"
+  | "repartizare_dpt"
+  | "mod_rezolvare"
+  | "nr_pag_anexe";
 
 interface RegistryTableProps {
   entries: DocumentEntry[];
   filters: RegistryFilters;
   loading?: boolean;
+  fieldConfig: FieldConfigItem[];
   onDownloadFile: (fileId: number) => void;
   onUpdateStatus: (entryId: number, status: "validated" | "rejected") => Promise<void>;
 }
-
-const PAGE_SIZE = 7;
 
 function containsText(value: string | undefined | null, query: string) {
   if (!value) return false;
   return value.toLowerCase().includes(query.toLowerCase());
 }
 
-export function RegistryTable({ entries, filters, loading = false, onDownloadFile, onUpdateStatus }: RegistryTableProps) {
+function isEntryColumnKey(key: string): key is EntryColumnKey {
+  return ENTRY_COLUMN_KEYS.has(key as EntryColumnKey);
+}
+
+function getEntryFieldValue(entry: DocumentEntry, field: FieldConfigItem): string {
+  if (field.source === "custom") {
+    return String(entry.custom_fields?.[field.key] ?? "");
+  }
+
+  if (!isEntryColumnKey(field.key)) {
+    return "";
+  }
+
+  return String(entry[field.key] ?? "");
+}
+
+export function RegistryTable({
+  entries,
+  filters,
+  loading = false,
+  fieldConfig,
+  onDownloadFile,
+  onUpdateStatus,
+}: RegistryTableProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.permission_level === "full_access" || user?.is_owner;
 
-  const [sortField, setSortField] = useState<SortField>("nr_inregistrare");
+  const [sortField, setSortField] = useState<string>("nr_inregistrare");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [page, setPage] = useState(1);
   const [processingId, setProcessingId] = useState<number | null>(null);
 
+  const visibleFields = useMemo(
+    () => fieldConfig.filter((field) => field.key !== "file_id"),
+    [fieldConfig],
+  );
+
+  useEffect(() => {
+    setPage(1);
+
+    if (!visibleFields.some((field) => field.key === sortField) && sortField !== "status") {
+      setSortField("nr_inregistrare");
+      setSortOrder("desc");
+    }
+  }, [fieldConfig, sortField, visibleFields]);
+
   const processed = useMemo(() => {
     const filtered = entries.filter((entry) => {
-      const bySearch =
-        !filters.search ||
-        containsText(entry.rezumat, filters.search) ||
-        containsText(entry.cod, filters.search) ||
-        containsText(entry.nr_inregistrare, filters.search);
+      const fieldSearchMatch = visibleFields.some((field) => containsText(getEntryFieldValue(entry, field), filters.search));
+      const bySearch = !filters.search || fieldSearchMatch || containsText(entry.status, filters.search);
 
       const byDepartment = !filters.department || containsText(entry.repartizare_dpt, filters.department);
-      
-      // Allow filtering by status text (pending, validated, rejected) or the iesire_intrare field
-      const byStatus = !filters.status || 
-        containsText(entry.iesire_intrare, filters.status) ||
-        containsText(entry.status, filters.status);
+      const byStatus = !filters.status || containsText(entry.iesire_intrare, filters.status) || containsText(entry.status, filters.status);
 
       return bySearch && byDepartment && byStatus;
     });
 
     const sorted = filtered.sort((a, b) => {
-      const left = (a[sortField as keyof DocumentEntry] as string)?.toLowerCase?.() ?? "";
-      const right = (b[sortField as keyof DocumentEntry] as string)?.toLowerCase?.() ?? "";
+      const left = sortField === "status"
+        ? (a.status ?? "").toLowerCase()
+        : isEntryColumnKey(sortField)
+          ? String(a[sortField] ?? "").toLowerCase()
+          : "";
+      const right = sortField === "status"
+        ? (b.status ?? "").toLowerCase()
+        : isEntryColumnKey(sortField)
+          ? String(b[sortField] ?? "").toLowerCase()
+          : "";
 
       if (left < right) return sortOrder === "asc" ? -1 : 1;
       if (left > right) return sortOrder === "asc" ? 1 : -1;
@@ -63,12 +122,13 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
     });
 
     return sorted;
-  }, [entries, filters, sortField, sortOrder]);
+  }, [entries, filters, visibleFields, sortField, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(processed.length / PAGE_SIZE));
   const current = processed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const toggleSort = (field: SortField) => {
+  const toggleSort = (field: string) => {
+    if (!SAFE_SORT_FIELDS.has(field)) return;
     setPage(1);
     if (sortField === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -102,10 +162,9 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
 
   return (
     <div className="flex flex-col w-full">
-      {/* Table Summary Bar */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/5">
         <span className="text-sm font-medium text-foreground">
-          {processed.length} {processed.length === 1 ? 'entry' : 'entries'} found
+          {processed.length} {processed.length === 1 ? "entry" : "entries"} found
         </span>
       </div>
 
@@ -128,52 +187,74 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/10 text-muted-foreground">
                   <tr>
-                    {[
-                      { field: "nr_inregistrare", label: "Nr" },
-                      { field: "cod", label: "Cod" },
-                      { field: "rezumat", label: "Rezumat" },
-                      { field: "repartizare_dpt", label: "Departament" },
-                      { field: "status", label: "Status" },
-                      { field: "file_id", label: "Actions"},
-                    ].map((col) => (
-                      <th key={col.field} className="px-5 py-3 text-left font-medium">
-                        {col.field === "rezumat" || col.field === "file_id" ? (
-                          col.label
-                        ) : (
-                          <button 
-                            className="inline-flex items-center gap-1 hover:text-foreground transition-colors" 
-                            onClick={() => toggleSort(col.field as SortField)}
-                          >
-                            {col.label}
-                            <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
-                          </button>
-                        )}
-                      </th>
-                    ))}
+                    {visibleFields.map((field) => {
+                      const sortable = SAFE_SORT_FIELDS.has(field.key);
+                      return (
+                        <th key={field.key} className="px-5 py-3 text-left font-medium">
+                          {sortable ? (
+                            <button
+                              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                              onClick={() => toggleSort(field.key)}
+                            >
+                              {field.label}
+                              <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
+                            </button>
+                          ) : (
+                            field.label
+                          )}
+                        </th>
+                      );
+                    })}
+                    <th className="px-5 py-3 text-left font-medium">
+                      <button
+                        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                        onClick={() => toggleSort("status")}
+                      >
+                        Status
+                        <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
+                      </button>
+                    </th>
+                    <th className="px-5 py-3 text-left font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-background">
                   {current.map((entry) => (
                     <tr key={entry.id} className="hover:bg-muted/10 transition-colors">
-                      <td className="px-5 py-3 font-medium text-foreground">{entry.nr_inregistrare}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{entry.cod}</td>
-                      <td className="max-w-[300px] px-5 py-3 text-muted-foreground truncate" title={entry.rezumat}>
-                        {entry.rezumat}
-                      </td>
-                      <td className="px-5 py-3">
-                        <Badge variant="secondary" className="font-normal">{entry.repartizare_dpt || "N/A"}</Badge>
-                      </td>
-                      <td className="px-5 py-3">
-                        {renderStatusBadge(entry.status)}
-                      </td>
+                      {visibleFields.map((field) => {
+                        const value = getEntryFieldValue(entry, field);
+                        const isSummary = field.key === "rezumat";
+                        const isDepartment = field.key === "repartizare_dpt";
+
+                        if (isSummary) {
+                          return (
+                            <td key={field.key} className="max-w-[320px] px-5 py-3 text-muted-foreground truncate" title={value}>
+                              {value || "-"}
+                            </td>
+                          );
+                        }
+
+                        if (isDepartment) {
+                          return (
+                            <td key={field.key} className="px-5 py-3">
+                              <Badge variant="secondary" className="font-normal">{value || "N/A"}</Badge>
+                            </td>
+                          );
+                        }
+
+                        return (
+                          <td key={field.key} className="px-5 py-3 text-muted-foreground">
+                            {value || "-"}
+                          </td>
+                        );
+                      })}
+                      <td className="px-5 py-3">{renderStatusBadge(entry.status)}</td>
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Admin Validation Controls */}
                           {isAdmin && entry.status === "pending" && (
                             <div className="flex items-center gap-1 mr-2 border-r border-border pr-2">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                                 disabled={processingId === entry.id}
                                 onClick={() => handleStatusChange(entry.id, "validated")}
@@ -181,9 +262,9 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
                               >
                                 <CheckCircle2 className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                                 disabled={processingId === entry.id}
                                 onClick={() => handleStatusChange(entry.id, "rejected")}
@@ -193,8 +274,7 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
                               </Button>
                             </div>
                           )}
-                          
-                          {/* PDF Download */}
+
                           {entry.file_id ? (
                             <Button size="sm" variant="outline" className="h-8 bg-background" onClick={() => onDownloadFile(entry.file_id!)}>
                               <FileText className="mr-2 h-3.5 w-3.5" />
@@ -211,7 +291,6 @@ export function RegistryTable({ entries, filters, loading = false, onDownloadFil
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/5">
               <p className="text-xs text-muted-foreground">
                 Page {page} of {totalPages}

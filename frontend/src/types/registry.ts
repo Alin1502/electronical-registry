@@ -57,6 +57,7 @@ export interface DocumentEntry {
   mod_rezolvare: string;
   nr_pag_anexe: string;
   file_id?: number | null;
+  custom_fields: Record<string, string>;
   status: string;
 }
 
@@ -71,6 +72,7 @@ export interface EntryPayload {
   repartizare_dpt: string;
   mod_rezolvare: string;
   nr_pag_anexe: string;
+  custom_fields: Record<string, string>;
   file_id?: number | null;
 }
 
@@ -132,3 +134,18 @@ export interface UserProfile {
   company_name: string;
 }
 
+export interface FieldConfigItem {
+  key: string;
+  label: string;
+  source: "column" | "custom";
+  system: boolean;
+}
+
+export interface RegisterTypeConfig {
+  id: number;
+  key: string;
+  display_name: string;
+  field_config: FieldConfigItem[];
+  is_locked: boolean;
+  is_active: boolean;
+}

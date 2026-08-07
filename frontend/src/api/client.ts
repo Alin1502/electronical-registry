@@ -9,6 +9,8 @@ import type {
   UploadedFile,
   HistoryEvent,
   SecureDocumentUploadResponse,
+  RegisterTypeConfig,
+  FieldConfigItem,
 } from "@/types/registry";
 import type { RoleEntity, UserProfile } from "@/types/registry";
 const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -442,4 +444,65 @@ export async function uploadAvatar(token: string, file: File) {
     throw new Error(data.detail || "Failed to upload avatar");
   }
   return response.json() as Promise<UserProfile>;
+}
+
+export function getRegisterTypes(token: string, includeInactive = false) {
+  const query = includeInactive ? "?include_inactive=true" : "";
+  return jsonRequest<RegisterTypeConfig[]>(`${BASE}/register-types/${query}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function createRegisterType(
+  token: string,
+  payload: { key: string; display_name: string; field_config: FieldConfigItem[] },
+) {
+  return jsonRequest<RegisterTypeConfig>(`${BASE}/register-types/`, {
+    method: "POST",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function lockRegisterType(token: string, id: number) {
+  return jsonRequest<RegisterTypeConfig>(`${BASE}/register-types/${id}/lock`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+}
+
+export function updateRegisterTypeLabels(
+  token: string,
+  id: number,
+  payload: { display_name?: string; field_labels?: Record<string, string> },
+) {
+  return jsonRequest<RegisterTypeConfig>(`${BASE}/register-types/${id}/labels`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateRegisterTypeFields(token: string, id: number, field_config: FieldConfigItem[]) {
+  return jsonRequest<RegisterTypeConfig>(`${BASE}/register-types/${id}/fields`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ field_config }),
+  });
+}
+
+export function deleteRegisterType(token: string, id: number) {
+  return jsonRequest<{ detail: string }>(`${BASE}/register-types/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
 }

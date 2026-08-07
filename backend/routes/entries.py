@@ -7,6 +7,7 @@ from core.database import get_db
 from core.security import get_current_user
 from models.entry import DocumentEntry
 from models.history import DocumentHistory
+from models.register_type import RegisterType
 from models.user import User
 from schemas.entry import EntryCreate, EntryResponse, StatusUpdate, PendingNotificationResponse
 from typing import List
@@ -16,6 +17,17 @@ from io import BytesIO
 from datetime import date
 router = APIRouter()
 
+LEGACY_FIELD_CONFIG = [
+    {"key": "nr_inregistrare", "label": "Nr Inregistrare", "source": "column"},
+    {"key": "cod", "label": "Cod", "source": "column"},
+    {"key": "iesire_intrare", "label": "Iesire/Intrare", "source": "column"},
+    {"key": "nr_data_emitent", "label": "Nr/Data Emitent", "source": "column"},
+    {"key": "nr_data_destinator", "label": "Nr/Data Destinator", "source": "column"},
+    {"key": "rezumat", "label": "Rezumat", "source": "column"},
+    {"key": "repartizare_dpt", "label": "Repartizare Dpt", "source": "column"},
+    {"key": "mod_rezolvare", "label": "Mod Rezolvare", "source": "column"},
+    {"key": "nr_pag_anexe", "label": "Nr Pag & Nr Anexe", "source": "column"},
+]
 TITLE = [
     "Nume Firma",
     "Nume Registru"
@@ -155,6 +167,12 @@ def sanitize_sheet_title(value: str) -> str:
     cleaned = "".join(c for c in value if c not in invalid_chars)
     return cleaned[:31] or "Sheet1"
 
+
+def _get_entry_value(entry: DocumentEntry, field: dict):
+    if field["source"] == "custom":
+        return (entry.custom_fields or {}).get(field["key"], "")
+    return getattr(entry, field["key"], "")
+
 @router.get("/{register_type:path}/excel")
 def download_excel(
     register_type: str,
@@ -183,10 +201,21 @@ def download_excel(
 
     entries = query.all()
 
+    register_config = (
+        db.query(RegisterType)
+        .filter(
+            RegisterType.company_id == current_user["company_id"],
+            RegisterType.key == register_type,
+        )
+        .first()
+    )
+    field_config = register_config.field_config if register_config else LEGACY_FIELD_CONFIG
+    display_name = register_config.display_name if register_config else register_type
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = sanitize_sheet_title(register_type)
-    num_cols = len(COLUMNS)
+    num_cols = len(field_config)
     mid = num_cols // 2
 
     thin = Side(style="thin", color="000000")
@@ -195,12 +224,11 @@ def download_excel(
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=mid)
     ws.merge_cells(start_row=1, start_column=mid + 1, end_row=1, end_column=num_cols)
 
-
     company_cell = ws.cell(row=1, column=1, value=current_user["company_name"])
     company_cell.font = Font(size=16, bold=True)
     company_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    register_cell = ws.cell(row=1, column=mid + 1, value=register_type)
+    register_cell = ws.cell(row=1, column=mid + 1, value=display_name)
     register_cell.font = Font(size=16, bold=True)
     register_cell.alignment = Alignment(horizontal="center", vertical="center")
 
@@ -208,16 +236,16 @@ def download_excel(
     ws.row_dimensions[2].height = 8
 
     #row 3 - headers
-    for col_idx, header in enumerate(COLUMNS, start=1):
-        cell = ws.cell(row=3, column=col_idx, value=header)
+    for col_idx, field in enumerate(field_config, start=1):
+        cell = ws.cell(row=3, column=col_idx, value=field["label"])
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = border
 
     #row 4 and below, data
     for row_offset, entry in enumerate(entries, start=4):
-        for col_idx, field in enumerate(FIELD_MAP, start=1):
-            cell = ws.cell(row=row_offset, column=col_idx, value=getattr(entry, field))
+        for col_idx, field in enumerate(field_config, start=1):
+            cell = ws.cell(row=row_offset, column=col_idx, value=_get_entry_value(entry, field))
             cell.border = border
 
     # auto-width columns, based on headers + data only (skip title row)

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { Download, FilePlus2, FileText, Link2, Trash2, UploadCloud, FileQuestion } from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Download, FilePlus2, FileQuestion, Link2, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import {
   createEntry,
@@ -11,14 +11,14 @@ import {
   getEntries,
   getFiles,
   getNextNr,
+  getRegisterTypes,
   removeFile,
-  uploadFile,
   updateEntryStatus,
+  uploadFile,
 } from "@/api/client";
 import { AdvancedFilterPanel, type RegistryFilters } from "@/components/registry/AdvancedFilterPanel";
 import { RegistryRoomsTable } from "@/components/registry/RegistryRoomsTable";
 import { RegistryTable } from "@/components/registry/RegistryTable";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,36 +31,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/store/authStore";
-import type { DocumentEntry, EntryPayload, NamedEntity, UploadedFile } from "@/types/registry";
 import { formatDate } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import type { DocumentEntry, EntryPayload, FieldConfigItem, NamedEntity, RegisterTypeConfig, UploadedFile } from "@/types/registry";
 
-const REGISTERS = [
-  "contracte",
-  "intrari/iesiri",
-  "decizii/hotarari",
-  "facturi",
-  "jurnal",
-  "inventar",
-  "casa",
-  "unic de control",
-  "evidenta a salariatilor",
-] as const;
+const LEGACY_FIELD_CONFIG: FieldConfigItem[] = [
+  { key: "nr_inregistrare", label: "Nr Inregistrare", source: "column", system: true },
+  { key: "cod", label: "Cod", source: "column", system: true },
+  { key: "iesire_intrare", label: "Iesire/Intrare", source: "column", system: false },
+  { key: "nr_data_emitent", label: "Nr/Data Emitent", source: "column", system: false },
+  { key: "nr_data_destinator", label: "Nr/Data Destinator", source: "column", system: false },
+  { key: "rezumat", label: "Rezumat", source: "column", system: false },
+  { key: "repartizare_dpt", label: "Repartizare Dpt", source: "column", system: false },
+  { key: "mod_rezolvare", label: "Mod Rezolvare", source: "column", system: false },
+  { key: "nr_pag_anexe", label: "Nr Pag & Nr Anexe", source: "column", system: false },
+];
 
-const REGISTER_LABELS: Record<string, string> = {
-  contracte: "Contracte",
-  "intrari/iesiri": "Intrări / Ieșiri",
-  "decizii/hotarari": "Decizii / Hotărâri",
-  facturi: "Facturi",
-  jurnal: "Jurnal",
-  inventar: "Inventar",
-  casa: "Casa",
-  "unic de control": "Unic de Control",
-  "evidenta a salariatilor": "Evidența Salariaților",
-};
-
-const initialForm: EntryPayload = {
-  register_type: REGISTERS[0],
+const BASE_ENTRY_FORM: EntryPayload = {
+  register_type: "",
   nr_inregistrare: "",
   cod: "",
   iesire_intrare: "",
@@ -70,15 +58,38 @@ const initialForm: EntryPayload = {
   repartizare_dpt: "",
   mod_rezolvare: "",
   nr_pag_anexe: "",
+  custom_fields: {},
   file_id: null,
 };
+
+const REQUIRED_DYNAMIC_KEYS = ["rezumat", "iesire_intrare", "repartizare_dpt"] as const;
+
+const COLUMN_KEYS = new Set([
+  "nr_inregistrare",
+  "cod",
+  "iesire_intrare",
+  "nr_data_emitent",
+  "nr_data_destinator",
+  "rezumat",
+  "repartizare_dpt",
+  "mod_rezolvare",
+  "nr_pag_anexe",
+]);
+
+function isColumnKey(key: string): key is keyof EntryPayload {
+  return COLUMN_KEYS.has(key);
+}
 
 export default function RecordsPage() {
   const navigate = useNavigate();
   const { register } = useParams();
+  const location = useLocation();
   const { token, user } = useAuthStore();
   const isAdmin = user?.is_owner;
   const isReadOnlyUser = user?.permission_level === "read";
+
+  const [registerTypes, setRegisterTypes] = useState<RegisterTypeConfig[]>([]);
+  const [loadingRegisterTypes, setLoadingRegisterTypes] = useState(true);
 
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -95,14 +106,14 @@ export default function RecordsPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
 
   const [entryModalOpen, setEntryModalOpen] = useState(false);
-  const [entryForm, setEntryForm] = useState<EntryPayload>(initialForm);
+  const [entryForm, setEntryForm] = useState<EntryPayload>(BASE_ENTRY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkedFileName, setLinkedFileName] = useState<string>("");
 
-  const location = useLocation();
-  const activeRegister = register as (typeof REGISTERS)[number];
-  const isValidRegister = REGISTERS.includes(register as (typeof REGISTERS)[number]);
-
+  const activeRegister = register ?? "";
+  const activeRegisterType = registerTypes.find((item) => item.key === activeRegister);
+  const isValidRegister = !register || Boolean(activeRegisterType);
+  const activeFieldConfig = activeRegisterType?.field_config ?? LEGACY_FIELD_CONFIG;
 
   useEffect(() => {
     if (!token) {
@@ -110,38 +121,64 @@ export default function RecordsPage() {
       return;
     }
 
-    if (register && !activeRegister) {
-      navigate("/records", { replace: true });
-    }
-  }, [activeRegister, navigate, register, token]);
+    void loadRegisterTypes();
+    void loadDepartments();
+  }, [token, navigate]);
 
   useEffect(() => {
     if (location.state && location.state.targetSearch) {
-      setFilters(prev => ({ ...prev, search: location.state.targetSearch }));
-      
+      setFilters((prev) => ({ ...prev, search: location.state.targetSearch }));
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-
   useEffect(() => {
-    if (!token || !activeRegister) return;
-    void loadDepartments();
-    void refreshData(activeRegister);
-    setEntryForm((prev) => ({ ...prev, register_type: activeRegister }));
-  }, [activeRegister, token]);
+    if (!token || loadingRegisterTypes) return;
+
+    if (register && !isValidRegister) {
+      navigate("/records", { replace: true });
+      return;
+    }
+
+    if (!register) return;
+
+    void refreshData(register, activeFieldConfig);
+  }, [token, register, isValidRegister, loadingRegisterTypes]);
 
   const registerFiles = useMemo(
     () => files.filter((file) => file.register_type === activeRegister),
     [files, activeRegister],
   );
 
-  const activeRegisterLabel = activeRegister ? REGISTER_LABELS[activeRegister] ?? activeRegister : "";
+  const activeRegisterLabel = activeRegisterType?.display_name ?? activeRegister;
 
-  const registryRooms = REGISTERS.map((room) => ({
-    code: room,
-    label: REGISTER_LABELS[room] ?? room,
-  }));
+  const registryRooms = useMemo(
+    () => registerTypes.filter((item) => item.is_active).map((item) => ({ code: item.key, label: item.display_name })),
+    [registerTypes],
+  );
+
+  const visibleColumnFields = useMemo(
+    () => activeFieldConfig.filter((field) => field.source === "column" && isColumnKey(field.key)),
+    [activeFieldConfig],
+  );
+
+  const visibleCustomFields = useMemo(
+    () => activeFieldConfig.filter((field) => field.source === "custom"),
+    [activeFieldConfig],
+  );
+
+  async function loadRegisterTypes() {
+    if (!token) return;
+    setLoadingRegisterTypes(true);
+    try {
+      const data = await getRegisterTypes(token);
+      setRegisterTypes(data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca tipurile de registru");
+    } finally {
+      setLoadingRegisterTypes(false);
+    }
+  }
 
   async function loadDepartments() {
     if (!token) return;
@@ -149,11 +186,21 @@ export default function RecordsPage() {
       const data = await getDepartments(token);
       setDepartments(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Nu s-au putut încărca departamentele");
+      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca departamentele");
     }
   }
 
-  async function refreshData(registerType: string) {
+  function buildCustomFields(fieldConfig: FieldConfigItem[], source?: Record<string, string>) {
+    const next: Record<string, string> = {};
+    for (const field of fieldConfig) {
+      if (field.source === "custom") {
+        next[field.key] = source?.[field.key] ?? "";
+      }
+    }
+    return next;
+  }
+
+  async function refreshData(registerType: string, fieldConfig: FieldConfigItem[]) {
     if (!token) return;
     setLoadingEntries(true);
     setLoadingFiles(true);
@@ -167,10 +214,12 @@ export default function RecordsPage() {
       setEntries(entryData);
       setFiles(fileData);
       setEntryForm((prev) => ({
+        ...BASE_ENTRY_FORM,
         ...prev,
         register_type: registerType,
         nr_inregistrare: nextNr.nr_inregistrare,
         cod: nextNr.cod,
+        custom_fields: buildCustomFields(fieldConfig, prev.custom_fields),
       }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load data");
@@ -180,11 +229,29 @@ export default function RecordsPage() {
     }
   }
 
+  function setColumnFieldValue(key: keyof EntryPayload, value: string) {
+    setEntryForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function setCustomFieldValue(key: string, value: string) {
+    setEntryForm((prev) => ({
+      ...prev,
+      custom_fields: { ...prev.custom_fields, [key]: value },
+    }));
+  }
+
   function validateEntry(form: EntryPayload) {
     const next: Record<string, string> = {};
-    if (!form.rezumat.trim()) next.rezumat = "Rezumatul trebuie completat";
-    if (!form.iesire_intrare.trim()) next.iesire_intrare = "Direcția trebuie completată";
-    if (!form.repartizare_dpt.trim()) next.repartizare_dpt = "Departamentul trebuie completat";
+
+    for (const key of REQUIRED_DYNAMIC_KEYS) {
+      const shouldValidate = visibleColumnFields.some((field) => field.key === key);
+      if (shouldValidate && !(form[key] ?? "").trim()) {
+        if (key === "rezumat") next[key] = "Rezumatul trebuie completat";
+        if (key === "iesire_intrare") next[key] = "Directia trebuie completata";
+        if (key === "repartizare_dpt") next[key] = "Departamentul trebuie completat";
+      }
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -192,7 +259,7 @@ export default function RecordsPage() {
   async function handleCreateEntry() {
     if (!token) return;
     if (isReadOnlyUser) {
-      toast.error("Nu ai atributele necesare pentru a adăuga documente. Contactează un administrator");
+      toast.error("Nu ai atributele necesare pentru a adauga documente. Contacteaza un administrator");
       return;
     }
     if (!validateEntry(entryForm)) return;
@@ -202,7 +269,7 @@ export default function RecordsPage() {
       toast.success("Entry created successfully");
       setEntryModalOpen(false);
       setLinkedFileName("");
-      await refreshData(activeRegister);
+      await refreshData(activeRegister, activeFieldConfig);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create entry");
     }
@@ -219,7 +286,7 @@ export default function RecordsPage() {
   async function handleUploadFile() {
     if (!token || !selectedFile) return;
     if (isReadOnlyUser) {
-      toast.error("Nu ai atributele necesare pentru a încărca PDF-uri");
+      toast.error("Nu ai atributele necesare pentru a incarca PDF-uri");
       return;
     }
     setUploading(true);
@@ -237,11 +304,11 @@ export default function RecordsPage() {
 
       setLinkedFileName(selectedFile.name);
       setEntryModalOpen(true);
-      toast.success("PDF-ul a fost adăugat. Adaugă detaliile rămase");
+      toast.success("PDF-ul a fost adaugat. Adauga detaliile ramase");
       setSelectedFile(null);
-      await refreshData(activeRegister);
+      await refreshData(activeRegister, activeFieldConfig);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi încărcat");
+      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi incarcat");
     } finally {
       setUploading(false);
     }
@@ -252,9 +319,9 @@ export default function RecordsPage() {
     try {
       await removeFile(token, fileId);
       toast.success("File deleted");
-      await refreshData(activeRegister);
+      await refreshData(activeRegister, activeFieldConfig);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi șters");
+      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi sters");
     }
   }
 
@@ -269,12 +336,12 @@ export default function RecordsPage() {
 
     if (!excelUseEntirePeriod) {
       if (!excelStartDate || !excelEndDate) {
-        toast.error("Selectează intervalul de timp pentru a genera excel-ul");
+        toast.error("Selecteaza intervalul de timp pentru a genera excel-ul");
         return;
       }
 
       if (excelStartDate > excelEndDate) {
-        toast.error("Data de început nu poate fi după data finală");
+        toast.error("Data de inceput nu poate fi dupa data finala");
         return;
       }
     }
@@ -285,7 +352,7 @@ export default function RecordsPage() {
         startDate: excelStartDate,
         endDate: excelEndDate,
       });
-      toast.success("Excel-ul a fost descărcat");
+      toast.success("Excel-ul a fost descarcat");
       setExcelDialogOpen(false);
       resetExcelDialog();
     } catch (error) {
@@ -301,25 +368,33 @@ export default function RecordsPage() {
       const result = await getDownloadUrl(token, fileId);
       window.open(result.download_url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Descărcarea nu a putut fi efectuată");
+      toast.error(error instanceof Error ? error.message : "Descarcarea nu a putut fi efectuata");
     }
   }
 
+  if (loadingRegisterTypes) {
+    return <div className="py-10 text-sm text-muted-foreground">Se incarca registrele...</div>;
+  }
 
   if (!register) {
     return (
       <div className="space-y-8">
         <section className="flex flex-col gap-1 border-b border-border pb-6">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">Selectarea registrelor</h1>
-          <p className="text-sm text-muted-foreground">Selectează un registru pentru a îl vedea sau modiifca</p>
+          <p className="text-sm text-muted-foreground">Selecteaza un registru pentru a il vedea sau modifica</p>
         </section>
-        <RegistryRoomsTable rooms={registryRooms} onSelectRoom={(roomCode) => navigate(`/records/${encodeURIComponent(roomCode)}`)} />
+
+        {registryRooms.length === 0 ? (
+          <div className="rounded-md border border-border bg-muted/10 p-5 text-sm text-muted-foreground">
+            Nu exista registre active.
+          </div>
+        ) : (
+          <RegistryRoomsTable rooms={registryRooms} onSelectRoom={(roomCode) => navigate(`/records/${encodeURIComponent(roomCode)}`)} />
+        )}
       </div>
     );
   }
 
-
-  
   if (!isValidRegister) {
     return (
       <div className="flex h-[60vh] w-full flex-col items-center justify-center space-y-4 text-center">
@@ -328,21 +403,20 @@ export default function RecordsPage() {
         <p className="max-w-md text-sm text-muted-foreground">
           The registry you are looking for "{register}" does not exist, or you might have a typo in the URL.
         </p>
-        <Button onClick={() => navigate("/registry")} variant="outline" className="mt-4">
+        <Button onClick={() => navigate("/records")} variant="outline" className="mt-4">
           Return to Registry
         </Button>
       </div>
     );
   }
+
   return (
     <div className="space-y-8">
-      {/* Flattened Header */}
       <section className="flex flex-col gap-1 border-b border-border pb-6">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
         <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
       </section>
 
-      {/*Action Row (Upload & Export side-by-side) */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 flex flex-col border border-border bg-background rounded-md overflow-hidden">
           <div className="px-5 py-4 border-b border-border bg-muted/20">
@@ -364,10 +438,9 @@ export default function RecordsPage() {
             </div>
             {isReadOnlyUser && <p className="text-xs text-muted-foreground">Read-only users cannot upload or create entries.</p>}
 
-            {/* Uploaded Files Sub-section */}
             {loadingFiles ? (
               <p className="text-sm text-muted-foreground pt-2">Loading files...</p>
-            ) : registerFiles.length > 0 && (
+            ) : registerFiles.length > 0 ? (
               <div className="mt-4 pt-4 border-t border-border space-y-2 max-h-48 overflow-y-auto pr-2">
                 {registerFiles.map((file) => (
                   <div key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/20 p-3">
@@ -400,7 +473,7 @@ export default function RecordsPage() {
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -486,10 +559,10 @@ export default function RecordsPage() {
                 <DialogFooter>
                   <Button variant="outline">Cancel</Button>
                   <Button onClick={async () => {
-                      if (!token) return;
-                      await downloadAllPdfs(token, activeRegister);
-                      toast.success("ZIP downloaded");
-                    }}>Confirm</Button>
+                    if (!token) return;
+                    await downloadAllPdfs(token, activeRegister);
+                    toast.success("ZIP downloaded");
+                  }}>Confirm</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -497,26 +570,25 @@ export default function RecordsPage() {
         </div>
       </div>
 
-      {/*The Unified Data Section (Filters + Table) */}
       <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
         <div className="border-b border-border bg-muted/5">
           <AdvancedFilterPanel filters={filters} onChange={setFilters} />
         </div>
-        
-        {/* The Table */}
+
         <div className="p-0">
-          <RegistryTable 
-            entries={entries} 
-            filters={filters} 
-            loading={loadingEntries} 
-            onDownloadFile={handleDownloadFile} 
+          <RegistryTable
+            entries={entries}
+            filters={filters}
+            loading={loadingEntries}
+            fieldConfig={activeFieldConfig}
+            onDownloadFile={handleDownloadFile}
             onUpdateStatus={async (id, status) => {
               if (!token) return;
               try {
                 await updateEntryStatus(token, id, status);
                 toast.success(`Document marked as ${status}`);
-                await refreshData(activeRegister); // Refreshes the table
-              } catch (error) {
+                await refreshData(activeRegister, activeFieldConfig);
+              } catch {
                 toast.error("Failed to update status");
               }
             }}
@@ -524,7 +596,6 @@ export default function RecordsPage() {
         </div>
       </div>
 
-      {/* Hidden Modal for Entry Details */}
       <Dialog open={entryModalOpen} onOpenChange={handleEntryModalChange}>
         <DialogContent>
           <DialogHeader>
@@ -543,79 +614,58 @@ export default function RecordsPage() {
               </div>
             ) : null}
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Nr inregistrare</label>
-              <Input value={entryForm.nr_inregistrare} readOnly className="bg-muted/50" />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Cod</label>
-              <Input value={entryForm.cod} readOnly className="bg-muted/50" />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Iesire/Intrare</label>
-              <Input
-                value={entryForm.iesire_intrare}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, iesire_intrare: event.target.value }))}
-                placeholder="intrare"
-              />
-              {errors.iesire_intrare && <p className="text-xs text-red-500">{errors.iesire_intrare}</p>}
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Nr/Data Emitent</label>
-              <Input
-                value={entryForm.nr_data_emitent}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_emitent: event.target.value }))}
-                placeholder="12/03/2024"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Nr/Data Destinatar</label>
-              <Input
-                value={entryForm.nr_data_destinator}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_data_destinator: event.target.value }))}
-                placeholder="12/03/2024"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Rezumat</label>
-              <Input
-                value={entryForm.rezumat}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, rezumat: event.target.value }))}
-                placeholder="Brief summary"
-              />
-              {errors.rezumat && <p className="text-xs text-red-500">{errors.rezumat}</p>}
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Repartizare departament</label>
-              <Input
-                list="departments-list"
-                value={entryForm.repartizare_dpt}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, repartizare_dpt: event.target.value }))}
-                placeholder="Select or type a department"
-              />
-              <datalist id="departments-list">
-                {departments.map((department) => (
-                  <option key={department.id} value={department.name} />
-                ))}
-              </datalist>
-              {errors.repartizare_dpt && <p className="text-xs text-red-500">{errors.repartizare_dpt}</p>}
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Mod rezolvare</label>
-              <Input
-                value={entryForm.mod_rezolvare}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, mod_rezolvare: event.target.value }))}
-                placeholder="In progress"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Nr pag & nr anexe</label>
-              <Input
-                value={entryForm.nr_pag_anexe}
-                onChange={(event) => setEntryForm((prev) => ({ ...prev, nr_pag_anexe: event.target.value }))}
-                placeholder="3 pagini / 2 anexe"
-              />
-            </div>
+            {visibleColumnFields.map((field) => {
+              const value = isColumnKey(field.key) ? String(entryForm[field.key] ?? "") : "";
+              const error = errors[field.key];
+
+              if (field.key === "repartizare_dpt") {
+                return (
+                  <div key={field.key} className="grid gap-2">
+                    <label className="text-sm font-medium">{field.label}</label>
+                    <Input
+                      list="departments-list"
+                      value={value}
+                      onChange={(event) => setColumnFieldValue("repartizare_dpt", event.target.value)}
+                      placeholder="Select or type a department"
+                    />
+                    <datalist id="departments-list">
+                      {departments.map((department) => (
+                        <option key={department.id} value={department.name} />
+                      ))}
+                    </datalist>
+                    {error && <p className="text-xs text-red-500">{error}</p>}
+                  </div>
+                );
+              }
+
+              return (
+                <div key={field.key} className="grid gap-2">
+                  <label className="text-sm font-medium">{field.label}</label>
+                  <Input
+                    value={value}
+                    readOnly={field.key === "nr_inregistrare" || field.key === "cod"}
+                    className={field.key === "nr_inregistrare" || field.key === "cod" ? "bg-muted/50" : undefined}
+                    onChange={(event) => {
+                      if (isColumnKey(field.key)) {
+                        setColumnFieldValue(field.key, event.target.value);
+                      }
+                    }}
+                    placeholder={field.key === "rezumat" ? "Brief summary" : undefined}
+                  />
+                  {error && <p className="text-xs text-red-500">{error}</p>}
+                </div>
+              );
+            })}
+
+            {visibleCustomFields.map((field) => (
+              <div key={field.key} className="grid gap-2">
+                <label className="text-sm font-medium">{field.label}</label>
+                <Input
+                  value={entryForm.custom_fields[field.key] ?? ""}
+                  onChange={(event) => setCustomFieldValue(field.key, event.target.value)}
+                />
+              </div>
+            ))}
           </div>
 
           <DialogFooter>
