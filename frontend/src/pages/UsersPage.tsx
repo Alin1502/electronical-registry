@@ -29,6 +29,7 @@ interface CompanyUser {
   username: string;
   email: string | null;
   is_owner: boolean;
+  role_id: number | null;
   role: string | null;
   permission_level: string;
 }
@@ -178,7 +179,7 @@ export default function UsersPage() {
                                   onOpenChange={(isOpen) => {
                                     if (isOpen) {
                                       setActiveDialog({ type: "edit", userId: u.id });
-                                      setSelectedRole(""); // Reset selection when opened
+                                      setSelectedRole(u.role_id ? String(u.role_id) : "");
                                     } else {
                                       setActiveDialog({ type: null, userId: null });
                                     }

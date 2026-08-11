@@ -5,6 +5,11 @@ interface ProcessingThroughputChartProps {
   entries: DocumentEntry[];
 }
 
+const THROUGHPUT_COLORS = {
+  created: "#334155",
+  processed: "#0f766e",
+};
+
 export function ProcessingThroughputChart({ entries }: ProcessingThroughputChartProps) {
   // Aggregate by day
   const dayData: Record<string, { label: string; created: number; processed: number }> = {};
@@ -54,14 +59,14 @@ export function ProcessingThroughputChart({ entries }: ProcessingThroughputChart
               cursor={{ stroke: "#e5e7eb", strokeWidth: 1, strokeDasharray: "3 3" }} 
             />
             <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />
-            <Line type="monotone" dataKey="created" stroke="#334155" name="Created" strokeWidth={2} dot={{ r: 3, strokeWidth: 0, fill: "#334155" }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="created" stroke={THROUGHPUT_COLORS.created} name="Created" strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0, fill: THROUGHPUT_COLORS.created }} activeDot={{ r: 5 }} />
             <Line
               type="monotone"
               dataKey="processed"
-              stroke="#94a3b8"
+              stroke={THROUGHPUT_COLORS.processed}
               name="Processed"
-              strokeWidth={2}
-              dot={{ r: 3, strokeWidth: 0, fill: "#94a3b8" }}
+              strokeWidth={2.5}
+              dot={{ r: 3, strokeWidth: 0, fill: THROUGHPUT_COLORS.processed }}
               activeDot={{ r: 5 }}
               strokeDasharray="5 5"
             />

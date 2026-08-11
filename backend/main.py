@@ -8,15 +8,17 @@ from core.migrations import (
     ensure_user_profile_columns,
     ensure_register_types_table,
     seed_default_register_types,
+    ensure_notifications_table
 )
 import models.user, models.file, models.entry
-from routes import auth, files, entries, roles, departments, admin, invites, secure_documents, register_types
+from routes import auth, files, entries, roles, departments, admin, invites, secure_documents, register_types, notifications
 
 Base.metadata.create_all(bind=engine)
 ensure_uploaded_file_size_column(engine)
 ensure_user_profile_columns(engine)
 ensure_register_types_table(engine)
 seed_default_register_types(engine)
+ensure_notifications_table(engine)
 
 app = FastAPI()
 
@@ -39,3 +41,4 @@ app.include_router(departments.router, prefix="/departments", tags=["departments
 app.include_router(invites.router, prefix="/invites", tags=["invites"])
 app.include_router(secure_documents.router, prefix="/secure-documents", tags=["secure-documents"])
 app.include_router(register_types.router, prefix="/register-types", tags=["register-types"])
+app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])

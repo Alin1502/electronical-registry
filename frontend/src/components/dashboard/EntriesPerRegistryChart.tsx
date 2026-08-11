@@ -5,6 +5,8 @@ interface EntriesPerRegistryChartProps {
   entries: DocumentEntry[];
 }
 
+const REGISTRY_BAR_COLOR = "#475569";
+
 export function EntriesPerRegistryChart({ entries }: EntriesPerRegistryChartProps) {
   // Count entries by register type
   const registryCount: Record<string, number> = {};
@@ -39,17 +41,17 @@ export function EntriesPerRegistryChart({ entries }: EntriesPerRegistryChartProp
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
       <h3 className="text-sm font-medium mb-6 text-foreground">Entries per Registry</h3>
-      <div className="h-[280px] w-full">
+      <div className="h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} layout="vertical" margin={{ left: 120, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis type="number" fontSize={12} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
-            <YAxis dataKey="registry" type="category" fontSize={12} width={110} tick={{ fill: "hsl(var(--foreground))" }} axisLine={{ stroke: "#e5e7eb" }} />
+          <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis dataKey="registry" fontSize={12} interval={0} tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
+            <YAxis fontSize={12} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
             <Tooltip 
               content={<RegistryTooltip />}
-              cursor={{ fill: "rgba(0,0,0,0.02)" }} 
+              cursor={{ fill: "hsl(var(--muted) / 0.2)" }} 
             />
-            <Bar dataKey="count" fill="#475569" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="count" fill={REGISTRY_BAR_COLOR} radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

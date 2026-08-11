@@ -400,6 +400,23 @@ export async function getPendingNotifications(token: string) {
   return response.json();
 }
 
+export async function getNotifications(token: string) {
+  const response = await fetch(`${BASE}/notifications/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch notifications");
+  return response.json();
+}
+
+export async function markAllNotificationsRead(token: string) {
+  const response = await fetch(`${BASE}/notifications/read-all`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to mark notifications as read");
+  return response.json();
+}
+
 export function getMyProfile(token: string) {
   return jsonRequest<UserProfile>(`${BASE}/auth/me`, { headers: authHeaders(token) });
 }

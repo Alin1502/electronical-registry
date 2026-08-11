@@ -109,7 +109,7 @@ export default function SecureDocumentsPage() {
               spellCheck={false}
             />
             <Button onClick={handleSearch} disabled={searching} className="w-full sm:w-auto">
-              {searching ? "Se deblochează..." : "Deblocheaază și descarcă"}
+              {searching ? "Se deblochează..." : "Deblochează și descarcă"}
             </Button>
           </div>
           <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">

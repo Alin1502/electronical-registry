@@ -139,7 +139,7 @@ export default function AdminPage() {
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Panoul de control</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Panou de control</h1>
         <p className="text-sm text-muted-foreground">Gestionează organizația, departamentele, rolurile și utilizatorii.</p>
       </section>
 

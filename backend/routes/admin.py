@@ -10,6 +10,7 @@ from models.file import UploadedFile
 from models.entry import DocumentEntry
 from models.user import User
 from models.role import Role
+from models.notification import Notification
 from core.permissions import require_admin_access
 from schemas.admin import AdminStatsResponse, RecentActivityItem
 from services.s3 import get_file_size_from_s3, generate_avatar_url
@@ -141,6 +142,7 @@ def get_company_users(db: Session = Depends(get_db), current_user: dict = Depend
             "username": user.username,
             "email": user.email,
             "is_owner": user.is_owner,
+            "role_id": user.role_id,
             "role": role_name,
             "permission_level": permission_level,
             "avatar_url": avatar_url,
@@ -178,7 +180,8 @@ def remove_user(
     db.query(UploadedFile).filter(UploadedFile.user_id == user_id).update(
         {UploadedFile.user_id: None}
     )
-
+    db.query(Notification).filter(Notification.user_id == user_id).delete()
+    
     db.delete(user)
     db.commit()
     return {"detail": "User removed"}
@@ -204,11 +207,35 @@ def update_user_role(
     if user.is_owner:
         raise HTTPException(status_code=403, detail="Cannot change the admin's role")
 
+    old_role = db.query(Role).filter(Role.id == user.role_id).first() if user.role_id else None
+
+    new_role = None
     if payload.role_id is not None:
-        role = db.query(Role).filter(Role.id == payload.role_id).first()
-        if not role:
+        new_role = db.query(Role).filter(Role.id == payload.role_id).first()
+        if not new_role:
             raise HTTPException(status_code=404, detail="Role not found")
 
+    role_changed = user.role_id != payload.role_id
     user.role_id = payload.role_id
     db.commit()
+
+    if role_changed:
+        if new_role is None:
+            notif_type = "role_removed"
+            message = f'Your role "{old_role.name}" was removed.' if old_role else "Your role was removed."
+        elif old_role is None:
+            notif_type = "role_updated"
+            message = f'You were assigned the role "{new_role.name}".'
+        else:
+            notif_type = "role_updated"
+            message = f'Your role was changed from "{old_role.name}" to "{new_role.name}".'
+
+        db.add(Notification(
+            user_id=user.id,
+            company_id=current_user["company_id"],
+            type=notif_type,
+            message=message,
+        ))
+        db.commit()
+
     return {"detail": "Role updated"}

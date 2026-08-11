@@ -1,5 +1,11 @@
 from sqlalchemy import inspect, text
+from models.notification import Notification
 
+
+def ensure_notifications_table(engine):
+    inspector = inspect(engine)
+    if "notifications" not in inspector.get_table_names():
+        Notification.__table__.create(bind=engine)
 
 def ensure_uploaded_file_size_column(engine) -> None:
     inspector = inspect(engine)

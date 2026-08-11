@@ -12,13 +12,28 @@ const COLORS = {
   archived: "#64748b",  // Slate
 };
 
+function normalizeStatus(entry: DocumentEntry) {
+  const status = entry.status?.trim().toLowerCase();
+  if (status === "validated" || status === "pending" || status === "rejected" || status === "archived") {
+    return status;
+  }
+
+  const resolution = entry.mod_rezolvare?.trim().toLowerCase() ?? "";
+  if (resolution.includes("validat")) return "validated";
+  if (resolution.includes("respins")) return "rejected";
+  if (resolution.includes("arhiva")) return "archived";
+  if (resolution) return "pending";
+
+  return "pending";
+}
+
 export function StatusDistributionChart({ entries }: StatusDistributionChartProps) {
-  // Count entries by status (simulated based on fields)
+  // Count entries by the persisted lifecycle status, with a legacy fallback.
   const statusCount = {
-    validated: entries.filter((e) => e.mod_rezolvare?.toLowerCase().includes("validat")).length,
-    pending: entries.filter((e) => !e.mod_rezolvare || e.mod_rezolvare === "").length,
-    rejected: entries.filter((e) => e.mod_rezolvare?.toLowerCase().includes("respins")).length,
-    archived: entries.filter((e) => e.mod_rezolvare?.toLowerCase().includes("arhiva")).length,
+    validated: entries.filter((entry) => normalizeStatus(entry) === "validated").length,
+    pending: entries.filter((entry) => normalizeStatus(entry) === "pending").length,
+    rejected: entries.filter((entry) => normalizeStatus(entry) === "rejected").length,
+    archived: entries.filter((entry) => normalizeStatus(entry) === "archived").length,
   };
 
   const chartData = [

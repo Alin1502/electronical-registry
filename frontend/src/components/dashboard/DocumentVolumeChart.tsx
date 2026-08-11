@@ -6,6 +6,12 @@ interface DocumentVolumeChartProps {
   period?: "6months" | "12months";
 }
 
+const FLOW_COLORS = {
+  input: "#334155",
+  output: "#0f766e",
+  internal: "#94a3b8",
+};
+
 export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVolumeChartProps) {
   // Aggregate entries by month and flow type
   const monthData: Record<string, { label: string; input: number; output: number; internal: number }> = {};
@@ -59,9 +65,9 @@ export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVol
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: "10px" }} iconType="circle" />
-            <Bar dataKey="input" stackId="a" fill="hsl(var(--chart-1))" name="Input" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="output" stackId="a" fill="hsl(var(--chart-2))" name="Output" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="internal" stackId="a" fill="hsl(var(--chart-3))" name="Internal" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="input" stackId="a" fill={FLOW_COLORS.input} name="Input" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="output" stackId="a" fill={FLOW_COLORS.output} name="Output" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="internal" stackId="a" fill={FLOW_COLORS.internal} name="Internal" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

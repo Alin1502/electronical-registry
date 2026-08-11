@@ -8,14 +8,14 @@ interface AppSidebarProps {
 }
 
 const navigationItems = [
-  { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/registry", label: "Registry", icon: FileStack, end: true },
-  { to: "/records", label: "Records", icon: Building2, end: true },
-  { to: "/secure-documents", label: "Secure Docs", icon: KeyRound, end: true },
-  { to: "/reports", label: "Reports", icon: BarChart3, end: true },
-  { to: "/users", label: "Users", icon: Users, end: true },
-  { to: "/admin", label: "Admin", icon: ShieldCheck, end: true },
-  { to: "/settings", label: "Settings", icon: Settings, end: true },
+  { to: "/", label: "Pagina Principală", icon: Home, end: true },
+  { to: "/registry", label: "Statistici", icon: FileStack, end: true },
+  { to: "/records", label: "Registru", icon: Building2, end: true },
+  { to: "/secure-documents", label: "Documente Criptate", icon: KeyRound, end: true },
+  { to: "/reports", label: "Arhivă", icon: BarChart3, end: true },
+  { to: "/users", label: "Utilizatori", icon: Users, end: true },
+  { to: "/admin", label: "Pagină Administrator", icon: ShieldCheck, end: true },
+  { to: "/settings", label: "Setări", icon: Settings, end: true },
 ];
 
 export function AppSidebar({ collapsed }: AppSidebarProps) {

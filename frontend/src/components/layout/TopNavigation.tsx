@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-import { getPendingNotifications } from "@/api/client";
-import { NotificationBell, type PendingNotification } from "./NotificationBell"; 
+import { getPendingNotifications, getNotifications, markAllNotificationsRead } from "@/api/client";
+import { NotificationBell, type PendingNotification, type RoleNotification } from "./NotificationBell";
 
 const publicLinks = [
   { label: "Home", to: "/" },
@@ -33,32 +33,46 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
   const navigate = useNavigate();
   const { user, token, logout } = useAuthStore();
 
-  const [notifications, setNotifications] = useState<PendingNotification[]>([]);
-  
+  const [validationNotifications, setValidationNotifications] = useState<PendingNotification[]>([]);
+  const [roleNotifications, setRoleNotifications] = useState<RoleNotification[]>([]);
+
   // Check if the logged-in user is an admin
   const isAdmin = user?.permission_level === "full_access" || user?.is_owner;
 
   useEffect(() => {
-    // Only run the fetch if they are logged in AND are an admin
-    if (!token || !isAdmin) return;
+    if (!token) return;
 
-    async function fetchNotifications() {
+    async function fetchAll() {
       try {
-        const data = await getPendingNotifications(token);
-        setNotifications(data);
+        const [validation, roles] = await Promise.all([
+          isAdmin ? getPendingNotifications(token) : Promise.resolve([]),
+          getNotifications(token),
+        ]);
+        setValidationNotifications(validation);
+        setRoleNotifications(roles);
       } catch (error) {
         console.error("Failed to load notifications", error);
       }
     }
 
     // Fetch immediately on load
-    fetchNotifications();
-    
-    // Poll every 30 seconds for new validation requests
-    const intervalId = setInterval(fetchNotifications, 30000);
+    fetchAll();
+
+    // Poll every 30 seconds for new notifications
+    const intervalId = setInterval(fetchAll, 30000);
     return () => clearInterval(intervalId);
-    
   }, [token, isAdmin]);
+
+  async function handleBellOpen() {
+    const hasUnread = roleNotifications.some((n) => !n.is_read);
+    if (!hasUnread || !token) return;
+    try {
+      await markAllNotificationsRead(token);
+      setRoleNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch (error) {
+      console.error("Failed to mark notifications as read", error);
+    }
+  }
 
   const initials = useMemo(() => {
     const text = user?.company_name ?? user?.sub ?? "RG";
@@ -117,8 +131,12 @@ export function TopNavigation({ onToggleSidebar, darkMode, onToggleDarkMode }: T
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          {token && isAdmin ? (
-            <NotificationBell notifications={notifications} />
+          {token ? (
+            <NotificationBell
+              validationNotifications={validationNotifications}
+              roleNotifications={roleNotifications}
+              onOpen={handleBellOpen}
+            />
           ) : null}
 
           {token ? (
