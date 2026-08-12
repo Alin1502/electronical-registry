@@ -6,10 +6,10 @@ interface StatusDistributionChartProps {
 }
 
 const COLORS = {
-  validated: "#059669", // Muted Emerald
-  pending: "#d97706",   // Muted Ochre
-  rejected: "#e11d48",  // Muted Rose
-  archived: "#64748b",  // Slate
+  validated: "hsl(var(--success))",
+  pending: "hsl(var(--warning))",
+  rejected: "hsl(var(--danger))",
+  archived: "hsl(var(--muted-foreground))",
 };
 
 function normalizeStatus(entry: DocumentEntry) {
@@ -22,13 +22,11 @@ function normalizeStatus(entry: DocumentEntry) {
   if (resolution.includes("validat")) return "validated";
   if (resolution.includes("respins")) return "rejected";
   if (resolution.includes("arhiva")) return "archived";
-  if (resolution) return "pending";
 
   return "pending";
 }
 
 export function StatusDistributionChart({ entries }: StatusDistributionChartProps) {
-  // Count entries by the persisted lifecycle status, with a legacy fallback.
   const statusCount = {
     validated: entries.filter((entry) => normalizeStatus(entry) === "validated").length,
     pending: entries.filter((entry) => normalizeStatus(entry) === "pending").length,
@@ -57,14 +55,30 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
       <h3 className="text-sm font-medium mb-6 text-foreground">Status Distribution</h3>
-      <div className="h-[250px] w-full">
+      <div className="h-[250px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Tooltip 
-              contentStyle={{ borderRadius: '6px', border: '1px solid #e5e7eb', boxShadow: 'none' }}
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                borderColor: "hsl(var(--border))",
+                borderRadius: "0.5rem",
+                color: "hsl(var(--foreground))",
+              }}
             />
-            <Legend wrapperStyle={{ fontSize: 12, color: "#6b7280" }} iconType="circle" />
-            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} stroke="none" label>
+            <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }} iconType="circle" />
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="45%"
+              innerRadius={55}
+              outerRadius={78}
+              paddingAngle={chartData.length > 1 ? 3 : 0}
+              stroke="hsl(var(--background))"
+              strokeWidth={2}
+            >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}

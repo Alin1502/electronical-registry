@@ -15,6 +15,7 @@ export function MainLayout() {
   const location = useLocation();
   const token = useAuthStore((state) => state.token);
   const isAuthenticated = isTokenValid(token);
+  const isHomePage = location.pathname === "/";
   
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -22,16 +23,19 @@ export function MainLayout() {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-background overflow-hidden">
-      {isAuthenticated && <AppSidebar collapsed={sidebarCollapsed} />}
+      {isAuthenticated && (
+        <AppSidebar collapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)} />
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavigation
-          onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
           darkMode={darkMode}
           onToggleDarkMode={() => setTheme(darkMode ? "light" : "dark")}
+          isHomePage={isHomePage}
+          sidebarCollapsed={sidebarCollapsed}
         />
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main id="app-scroll-container" className="flex-1 overflow-y-auto px-6 pb-6 pt-0 md:px-8 md:pb-8">
           <div className="mx-auto max-w-7xl">
             <Breadcrumbs />
             <AnimatePresence mode="wait">

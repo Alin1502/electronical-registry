@@ -7,6 +7,7 @@ import RegistryPage from "@/pages/RegistryPage";
 import RecordsPage from "@/pages/RecordsPage";
 import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
+import ContactPage from "@/pages/ContactPage";
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import SecureDocumentsPage from "@/pages/SecureDocumentsPage";
@@ -38,7 +39,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
-        
+        <Route path="/contact" element={<ContactPage/>} />
         {/*Legacy dashboard now redirects to /records to be safe for all users */}
         <Route path="/dashboard" element={<Navigate to="/records" replace />} />
         
