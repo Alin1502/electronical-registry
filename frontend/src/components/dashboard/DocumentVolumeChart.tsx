@@ -44,7 +44,7 @@ export function DocumentVolumeChart({ entries, period = "6months" }: DocumentVol
 
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-      <h3 className="text-sm font-medium mb-6 text-foreground">Document Volume by Flow</h3>
+      <h3 className="text-sm font-medium mb-6 text-foreground">Distribuția Documentelor</h3>
       <div className="h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>

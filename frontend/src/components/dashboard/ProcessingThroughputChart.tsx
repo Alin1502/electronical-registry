@@ -40,7 +40,7 @@ export function ProcessingThroughputChart({ entries }: ProcessingThroughputChart
 
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-      <h3 className="text-sm font-medium mb-6 text-foreground">Processing Throughput (last 14 days)</h3>
+      <h3 className="text-sm font-medium mb-6 text-foreground">Evoluția Documentelor în Ultimele 14 Zile</h3>
       <div className="h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ left: -20, right: 10 }}>

@@ -40,7 +40,7 @@ export function EntriesPerRegistryChart({ entries }: EntriesPerRegistryChartProp
 
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-      <h3 className="text-sm font-medium mb-6 text-foreground">Entries per Registry</h3>
+      <h3 className="text-sm font-medium mb-6 text-foreground">Documente per Registru</h3>
       <div className="h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

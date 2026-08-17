@@ -44,9 +44,9 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
   if (chartData.length === 0) {
     return (
       <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-        <h3 className="text-sm font-medium mb-6 text-foreground">Status Distribution</h3>
+        <h3 className="text-sm font-medium mb-6 text-foreground">Distribuția Statusului Documentelor</h3>
         <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-          No status data available
+          Fără date disponibile
         </div>
       </div>
     );
@@ -54,7 +54,7 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
 
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-      <h3 className="text-sm font-medium mb-6 text-foreground">Status Distribution</h3>
+      <h3 className="text-sm font-medium mb-6 text-foreground">Distribuția Statusului Documentelor</h3>
       <div className="h-[250px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

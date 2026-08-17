@@ -59,8 +59,6 @@ export function AppSidebar({ collapsed, onToggleSidebar }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        // Removed: rounded-md, shadow-soft, sticky, p-4, backdrop-blur
-        // Added: flex-col, h-screen, border-r, z-10
         "hidden h-screen flex-col border-r border-border bg-background transition-all duration-300 md:flex z-10",
         collapsed ? "w-16 items-center px-2 py-4" : "w-64 px-4 py-4"
       )}
@@ -126,9 +124,9 @@ export function AppSidebar({ collapsed, onToggleSidebar }: AppSidebarProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/settings") }>
                 <UserCircle2 className="mr-2 h-4 w-4" />
-                Profile
+                Profil
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/registry")}>Registry</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/registry")}>Registru</DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/admin")}>Administrare</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -138,7 +136,7 @@ export function AppSidebar({ collapsed, onToggleSidebar }: AppSidebarProps) {
                 }}
                 className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
               >
-                Sign out
+                Deconectare
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

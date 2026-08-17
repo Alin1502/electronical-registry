@@ -46,10 +46,10 @@ export function OperatorActivity({ entries, users }: OperatorActivityProps) {
       <div className="flex flex-col border border-border bg-background p-5 rounded-md">
         <h3 className="text-sm font-medium mb-4 text-foreground flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
-          Operator Activity
+          Activitate recentă
         </h3>
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-          No activity yet
+          Nicio activitate
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ export function OperatorActivity({ entries, users }: OperatorActivityProps) {
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
       <h3 className="text-sm font-medium mb-4 text-foreground flex items-center gap-2">
         <Users className="h-4 w-4 text-muted-foreground" />
-        Operator Activity
+        Activitate Recentă
       </h3>
       <div className="space-y-2 mt-2">
         {activityList.map((activity) => {
@@ -83,7 +83,7 @@ export function OperatorActivity({ entries, users }: OperatorActivityProps) {
                 </div>
               </div>
               <div className="text-right flex flex-col items-end">
-                <Badge variant="secondary" className="font-normal text-xs">{activity.uploads} uploads</Badge>
+                <Badge variant="secondary" className="font-normal text-xs">{activity.uploads} încărcări</Badge>
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
                   {new Date(activity.lastEntry).toLocaleDateString("ro-RO")}
                 </p>

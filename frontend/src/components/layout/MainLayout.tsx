@@ -35,9 +35,12 @@ export function MainLayout() {
           sidebarCollapsed={sidebarCollapsed}
         />
 
-        <main id="app-scroll-container" className="flex-1 overflow-y-auto px-6 pb-6 pt-0 md:px-8 md:pb-8">
-          <div className="mx-auto max-w-7xl">
-            <Breadcrumbs />
+        <main 
+          id="app-scroll-container" 
+          className={`flex-1 overflow-y-auto ${isHomePage ? "" : "px-6 pb-6 pt-0 md:px-8 md:pb-8"}`}
+        >
+          <div className={isHomePage ? "w-full" : "mx-auto max-w-7xl"}>
+            {!isHomePage && <Breadcrumbs />}
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

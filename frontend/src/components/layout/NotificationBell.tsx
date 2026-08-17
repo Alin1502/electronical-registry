@@ -60,7 +60,7 @@ export function NotificationBell({ validationNotifications, roleNotifications, o
       <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
         <div className="w-80 rounded-md border border-border bg-card shadow-lg overflow-hidden">
           <div className="flex items-center justify-between border-b border-border bg-muted/20 px-4 py-3">
-            <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
+            <h4 className="text-sm font-semibold text-foreground">Notificări</h4>
             {totalCount > 0 && (
               <Badge variant="secondary" className="text-xs font-normal">{totalCount} new</Badge>
             )}
@@ -69,7 +69,7 @@ export function NotificationBell({ validationNotifications, roleNotifications, o
           <div className="max-h-[300px] overflow-y-auto">
             {merged.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                You're all caught up!
+                Nicio notificare
               </div>
             ) : (
               <div className="divide-y divide-border">
@@ -85,10 +85,10 @@ export function NotificationBell({ validationNotifications, roleNotifications, o
                       </div>
                       <div className="flex flex-col gap-1">
                         <p className="text-sm text-foreground leading-snug">
-                          New validation request from <span className="font-medium">{item.data.username}</span> in{" "}
+                          Cerere nouă de validare de la <span className="font-medium">{item.data.username}</span> in{" "}
                           <span className="font-medium capitalize">{item.data.register_type}</span>.
                         </p>
-                        <span className="text-xs text-muted-foreground">Click to review</span>
+                        <span className="text-xs text-muted-foreground">Vizualizează</span>
                       </div>
                     </button>
                   ) : (
