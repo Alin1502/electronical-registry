@@ -122,3 +122,18 @@ def seed_default_register_types(engine) -> None:
                         "config": json.dumps(DEFAULT_FIELD_CONFIG),
                     },
                 )
+
+def ensure_file_entry_link(engine):
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("files")]
+    with engine.begin() as conn:
+        if "entry_id" not in columns:
+            conn.execute(text("ALTER TABLE files ADD COLUMN entry_id INTEGER REFERENCES document_entries(id)"))
+        # backfill: pentru orice entry cu file_id vechi, leagă fișierul înapoi la ea
+        conn.execute(text("""
+            UPDATE files
+            SET entry_id = document_entries.id
+            FROM document_entries
+            WHERE document_entries.file_id = files.id
+              AND files.entry_id IS NULL
+        """))

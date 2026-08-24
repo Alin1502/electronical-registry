@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getAdminStats, getEntries, getCompanyUsers } from "@/api/client";
+import { getAdminStats, getEntries, getCompanyUsers, getRegisterTypes } from "@/api/client";
 import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DocumentVolumeChart } from "@/components/dashboard/DocumentVolumeChart";
@@ -10,10 +10,10 @@ import { EntriesPerRegistryChart } from "@/components/dashboard/EntriesPerRegist
 import { ProcessingThroughputChart } from "@/components/dashboard/ProcessingThroughputChart";
 import { OperatorActivity } from "@/components/dashboard/OperatorActivity";
 import { useAuthStore } from "@/store/authStore";
-import type { AdminStats } from "@/types/registry";
+import type { AdminStats, RegisterTypeConfig } from "@/types/registry";
 import type { DocumentEntry } from "@/types/registry";
 
-const REGISTRY_TYPES = [
+const LEGACY_REGISTRY_TYPES = [
   "contracte",
   "intrari/iesiri",
   "decizii/hotarari",
@@ -41,6 +41,7 @@ export default function RegistryPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [allEntries, setAllEntries] = useState<DocumentEntry[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [registerTypes, setRegisterTypes] = useState<RegisterTypeConfig[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const analyticsEntries = allEntries.filter((entry) => entry.status !== "rejected");
 
@@ -54,16 +55,27 @@ export default function RegistryPage() {
     async function loadAllData() {
       setLoadingEntries(true);
       try {
-        const [adminStats, registryEntries, fetchedUsers] = await Promise.all([
+        const [adminStats, configuredRegisterTypes, fetchedUsers] = await Promise.all([
           getAdminStats(token),
-          Promise.all(REGISTRY_TYPES.map((register) => getEntries(token, register))),
+          getRegisterTypes(token),
           getCompanyUsers(token),
         ]);
 
         if (!isActive) return;
 
+        const registerKeys = [
+          ...new Set([
+            ...LEGACY_REGISTRY_TYPES,
+            ...configuredRegisterTypes.map((register) => register.key),
+          ]),
+        ];
+        const registryEntries = await Promise.all(registerKeys.map((register) => getEntries(token, register)));
+
+        if (!isActive) return;
+
         const allRegisterEntries = registryEntries.flat();
         setStats(adminStats);
+        setRegisterTypes(configuredRegisterTypes);
         setAllEntries(allRegisterEntries);
         setUsersList(fetchedUsers);
       } catch (error) {
@@ -106,7 +118,7 @@ export default function RegistryPage() {
           detail={`+${stats?.recent_entries_last_7_days ?? 0} in last ${RECENT_WINDOW_DAYS} days`}
         />
         <StatCard title="Pending Validation" value={<AnimatedCounter value={stats?.pending_validation ?? 0} />} detail="awaiting review" />
-        <StatCard title="Registries" value={stats?.registry_count ?? REGISTRY_TYPES.length} detail="active registry types" />
+        <StatCard title="Registries" value={stats?.registry_count ?? registerTypes.length} detail="active registry types" />
         <StatCard
           title="Operators"
           value={stats?.operator_count ?? 0}

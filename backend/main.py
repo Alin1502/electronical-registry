@@ -8,7 +8,8 @@ from core.migrations import (
     ensure_user_profile_columns,
     ensure_register_types_table,
     seed_default_register_types,
-    ensure_notifications_table
+    ensure_notifications_table,
+    ensure_file_entry_link,
 )
 import models.user, models.file, models.entry
 from routes import auth, files, entries, roles, departments, admin, invites, secure_documents, register_types, notifications
@@ -19,7 +20,7 @@ ensure_user_profile_columns(engine)
 ensure_register_types_table(engine)
 seed_default_register_types(engine)
 ensure_notifications_table(engine)
-
+ensure_file_entry_link(engine)
 app = FastAPI()
 
 origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost").split(",") if origin.strip()]

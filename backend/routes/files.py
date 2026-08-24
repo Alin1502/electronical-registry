@@ -24,12 +24,23 @@ router = APIRouter()
 async def upload_pdf(
     file: UploadFile = File(...),
     register_type: str = Form(...),
+    entry_id: int | None = Form(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
     require_write_access(current_user)
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    if entry_id is not None:
+        entry = (
+            db.query(DocumentEntry)
+            .join(User, User.id == DocumentEntry.user_id)
+            .filter(DocumentEntry.id == entry_id, User.company_id == current_user["company_id"])
+            .first()
+        )
+        if not entry:
+            raise HTTPException(status_code=404, detail="Entry not found or unauthorized")
 
     safe_folder = register_type.replace("/", "-").replace(" ", "_")
     filename = file.filename or "upload.pdf"
@@ -40,11 +51,11 @@ async def upload_pdf(
 
     size_bytes = 0
     try:
-                file.file.seek(0, os.SEEK_END)
-                size_bytes = file.file.tell()
-                file.file.seek(0)
+        file.file.seek(0, os.SEEK_END)
+        size_bytes = file.file.tell()
+        file.file.seek(0)
     except Exception:
-                size_bytes = 0
+        size_bytes = 0
 
     try:
         upload_file_to_s3(file.file, s3_key)
@@ -56,15 +67,16 @@ async def upload_pdf(
         s3_key=s3_key,
         register_type=register_type,
         size_bytes=size_bytes,
-        user_id=current_user['id']
+        user_id=current_user['id'],
+        entry_id=entry_id,
     )
     db.add(db_file)
     db.commit()
-    db.refresh(db_file)  
+    db.refresh(db_file)
     return {
         "status": "success",
         "message": f"{file.filename} uploaded successfully.",
-        "file_id": db_file.id  
+        "file_id": db_file.id
     }
 @router.get("/", response_model=List[FileResponse])
 def list_files(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
@@ -77,7 +89,18 @@ def list_files(db: Session = Depends(get_db), current_user: dict = Depends(get_c
         )
         .all()
     )
-
+@router.get("/by-entry/{entry_id}", response_model=List[FileResponse])
+def list_files_for_entry(entry_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    return (
+        db.query(UploadedFile)
+        .join(User, User.id == UploadedFile.user_id)
+        .filter(
+            UploadedFile.entry_id == entry_id,
+            User.company_id == current_user['company_id'],
+        )
+        .order_by(UploadedFile.uploaded_at.asc())
+        .all()
+    )
 @router.get("/download/{file_id}", response_model=DownloadResponse)
 def download_file(file_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     file_record = (
@@ -126,17 +149,12 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not delete file {str(e)}")
 
-    entries_to_delete = db.query(DocumentEntry).filter(DocumentEntry.file_id == file_id).all()
-    for entry in entries_to_delete:
-        db.query(DocumentHistory).filter(DocumentHistory.entry_id == entry.id).delete(synchronize_session=False)
-        db.delete(entry)
-
     db.delete(file_record)
     db.commit()
 
-    return {"status": "success", "message":"File was deleted successfully from the registry"}
+    return {"status": "success", "message": "File was deleted successfully from the registry"}
 
-@router.get("/download-all/{register_type}")
+@router.get("/download-all/{register_type:path}")
 def download_all_files(register_type: str,db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     files = (
         db.query(UploadedFile)

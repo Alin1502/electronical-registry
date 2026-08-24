@@ -14,6 +14,7 @@ from typing import List
 import openpyxl
 from openpyxl.styles import Border, Side, Font, Alignment
 from io import BytesIO
+from models.file import UploadedFile
 from datetime import date
 router = APIRouter()
 
@@ -81,16 +82,20 @@ def create_entry(
 ):
     require_write_access(current_user)
     
-    # Determine status based on role
-    # Assuming current_user dictionary holds 'permission_level'
     initial_status = "validated" if current_user.get("permission_level") == "full_access" else "pending"
     
-    #Inject the status into the database model
     db_entry = DocumentEntry(**entry.model_dump(), user_id=current_user["id"], status=initial_status)
     db.add(db_entry)
     db.flush()  # assigns db_entry.id without ending the transaction
 
-    #Log the correct initial status in the history
+    # Compatibilitate cu fluxul vechi: dacă a venit un file_id la creare
+    # (upload înainte de entry), leagă fișierul respectiv și prin noua relație entry_id,
+    # ca să apară și el în GET /files/by-entry/{id}, nu doar în entry.file_id.
+    if db_entry.file_id is not None:
+        linked_file = db.query(UploadedFile).filter(UploadedFile.id == db_entry.file_id).first()
+        if linked_file is not None:
+            linked_file.entry_id = db_entry.id
+
     history_event = DocumentHistory(
         entry_id=db_entry.id,
         user_id=current_user["id"],

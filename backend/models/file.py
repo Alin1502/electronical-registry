@@ -18,5 +18,6 @@ class UploadedFile(Base):
     encryption_salt = Column(String(64), nullable=True)
     encryption_nonce = Column(String(64), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    entry_id = Column(Integer, ForeignKey("document_entries.id"), nullable=True, index=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     owner = relationship("User")

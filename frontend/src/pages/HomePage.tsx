@@ -279,8 +279,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl">
           <h2 className="text-xl font-semibold mb-4">Cine dezvoltă Regix?</h2>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Regix este dezvoltat independent, ca proiect propriu, pornind de la nevoi reale întâlnite
-            în gestiunea registraturii instituționale.
+            ...
           </p>
         </div>
       </section>
@@ -316,7 +315,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECȚIUNEA PRE-FOOTER (CTA) REVENITĂ LA CULORILE NORMALE */}
       <section className="w-full bg-muted/40 py-20 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="grid md:grid-cols-2 gap-10 md:gap-0 md:divide-x md:divide-border mb-10">
