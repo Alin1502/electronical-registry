@@ -16,6 +16,8 @@ from openpyxl.styles import Border, Side, Font, Alignment
 from io import BytesIO
 from models.file import UploadedFile
 from datetime import date
+from botocore.exceptions import ClientError
+from services.s3 import delete_file_from_s3
 router = APIRouter()
 
 LEGACY_FIELD_CONFIG = [
@@ -106,7 +108,45 @@ def create_entry(
     db.commit()
     db.refresh(db_entry)
     return db_entry
+@router.delete("/{entry_id}")
+def delete_entry(
+    entry_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    require_write_access(current_user)
 
+    db_entry = (
+        db.query(DocumentEntry)
+        .join(User, User.id == DocumentEntry.user_id)
+        .filter(DocumentEntry.id == entry_id, User.company_id == current_user["company_id"])
+        .first()
+    )
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found or unauthorized")
+
+    attached_files = db.query(UploadedFile).filter(UploadedFile.entry_id == entry_id).all()
+
+    # Detaseaza legatura legacy inainte de a sterge fisierele, altfel FK-ul
+    # document_entries_file_id_fkey blocheaza DELETE-ul pe files de mai jos.
+    db_entry.file_id = None
+    db.flush()
+
+    for file_record in attached_files:
+        try:
+            delete_file_from_s3(file_record.s3_key)
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code") if hasattr(e, "response") else None
+            if error_code not in {"NoSuchKey", "404"}:
+                raise HTTPException(status_code=500, detail=f"Could not delete file {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Could not delete file {str(e)}")
+        db.delete(file_record)
+
+    db.delete(db_entry)
+    db.commit()
+
+    return {"status": "success", "message": "Entry and its files were deleted successfully"}
 @router.patch("/{entry_id}/status", response_model=EntryResponse)
 def update_entry_status(
     entry_id: int,

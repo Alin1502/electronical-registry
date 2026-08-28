@@ -150,13 +150,13 @@ export default function LoginPage() {
 
             <Button className="w-full mt-2 h-10" type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isRegister ? "Create workspace" : "Sign In"}
+              {isRegister ? "Creare cont" : "Logare"}
             </Button>
           </form>
         </div>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          {isRegister ? "Ai deja un cont? " : "Crează un cont nou "}
+          {isRegister ? "Ai deja un cont? " : "Nu ai cont? "}
           <button 
             type="button" 
             onClick={() => {

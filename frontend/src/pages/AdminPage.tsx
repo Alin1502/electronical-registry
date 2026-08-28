@@ -8,14 +8,16 @@ import {
   deleteDepartment,
   deleteRole,
   getDepartments,
+  getInvites,
   getRoles,
   updateDepartment,
   updateRole,
 } from "@/api/client";
+import { formatDate } from "@/lib/utils";
+import type { InviteEntity, RoleEntity } from "@/types/registry";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleManager } from "@/components/registry/RoleManager";
-import type { RoleEntity } from "@/types/registry"; 
 import {
   Dialog,
   DialogContent,
@@ -55,7 +57,7 @@ function EntityManager({
       </div>
       <div className="p-5">
         <div className="mb-5 flex gap-2">
-          <Input placeholder={`Add ${title.toLowerCase()}...`} value={value} onChange={(event) => setValue(event.target.value)} />
+          <Input placeholder={`Adaugă`} value={value} onChange={(event) => setValue(event.target.value)} />
           <Button
             onClick={async () => {
               if (!value.trim()) return;
@@ -72,12 +74,30 @@ function EntityManager({
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-transparent hover:border-border hover:bg-muted/30 p-2 transition-colors">
               {editingId === item.id ? (
-                <Input defaultValue={item.name} onBlur={(event) => onUpdate(item.id, event.target.value.trim())} autoFocus />
+                <Input
+                  defaultValue={item.name}
+                  onBlur={async (event) => {
+                    const newValue = event.target.value.trim();
+                    if (newValue && newValue !== item.name) {
+                      await onUpdate(item.id, newValue);
+                    }
+                    setEditingId(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setEditingId(null);
+                    }
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  autoFocus
+                />
               ) : (
                 <span className="text-sm font-medium pl-1">{item.name}</span>
               )}
               <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={() => setEditingId(item.id)}>Edit</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingId(item.id)}>Editează</Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
@@ -103,7 +123,43 @@ function EntityManager({
     </div>
   );
 }
-
+function PendingInvitesList({ items }: { items: InviteEntity[] }) {
+  return (
+    <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <h3 className="text-sm font-medium text-foreground">Invitații în așteptare</h3>
+        <Badge variant="secondary" className="font-normal">{items.length}</Badge>
+      </div>
+      <div className="p-5">
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nu există invitații în așteptare.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((invite) => {
+              const isExpired = new Date(invite.expires_at) < new Date();
+              return (
+                <div key={invite.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/20 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{invite.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {invite.role_name ?? "Fără rol"} · invitat de {invite.invited_by} · {formatDate(invite.created_at)}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={isExpired ? "outline" : "secondary"}
+                    className={isExpired ? "font-normal text-muted-foreground" : "font-normal"}
+                  >
+                    {isExpired ? "Expirat" : "În așteptare"}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 export default function AdminPage() {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
@@ -111,7 +167,7 @@ export default function AdminPage() {
 
   const [departments, setDepartments] = useState<NamedEntity[]>([]);
   const [roles, setRoles] = useState<RoleEntity[]>([]);
-
+  const [invites, setInvites] = useState<InviteEntity[]>([]);
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -123,12 +179,14 @@ export default function AdminPage() {
   async function loadAll() {
     if (!token) return;
     try {
-      const [deptData, roleData] = await Promise.all([
+      const [deptData, roleData, inviteData] = await Promise.all([
         getDepartments(token),
         getRoles(token),
+        getInvites(token),
       ]);
       setDepartments(deptData);
       setRoles(roleData);
+      setInvites(inviteData);
     } catch (error) {
       if (error instanceof Error && error.message !== "Admin access required") {
         toast.error(error instanceof Error ? error.message : "Unable to load admin data");
@@ -151,28 +209,28 @@ export default function AdminPage() {
 
       <div className="space-y-6">
         {isAdmin ? <InviteUserForm roles={roles} /> : null}
-        
+        {isAdmin ? <PendingInvitesList items={invites} /> : null}
         <div className="grid gap-6 lg:grid-cols-2 items-start">
           <div className="space-y-6">
             <EntityManager
-              title="Departments"
+              title="Departamente"
               items={departments}
               onCreate={async (name) => {
                 if (!token) return;
                 await createDepartment(token, name);
-                toast.success("Department added");
+                toast.success("Departament adăugat");
                 await loadAll();
               }}
               onUpdate={async (id, name) => {
                 if (!token || !name) return;
                 await updateDepartment(token, id, name);
-                toast.success("Department updated");
+                toast.success("Departament modificat");
                 await loadAll();
               }}
               onDelete={async (id) => {
                 if (!token) return;
                 await deleteDepartment(token, id);
-                toast.success("Department deleted");
+                toast.success("Departament șters");
                 await loadAll();
               }}
             />

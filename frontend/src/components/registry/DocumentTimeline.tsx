@@ -21,7 +21,7 @@ export function DocumentTimeline({ entryId }: { entryId: number }) {
       .finally(() => setLoading(false));
   }, [entryId]);
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading history…</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">Istoricul se încarcă…</div>;
 
   return (
     <div className="flex flex-col">

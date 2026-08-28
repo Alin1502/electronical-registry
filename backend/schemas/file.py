@@ -7,6 +7,7 @@ class FileResponse(BaseModel):
     register_type: str
     size_bytes: int
     uploaded_at: datetime
+    entry_id: int | None = None
 
     class Config:
         from_attributes = True

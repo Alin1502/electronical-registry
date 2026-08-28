@@ -32,7 +32,7 @@ export function ChartUpload({ onImported }: { onImported: () => void }) {
         }))
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Extraction failed");
+      toast.error(error instanceof Error ? error.message : "Nu se pot extrage departamentele din fișier");
     } finally {
       setLoading(false);
     }
@@ -50,18 +50,18 @@ export function ChartUpload({ onImported }: { onImported: () => void }) {
     if (!token) return;
     const names = candidates.filter((c) => c.accepted && c.text.trim()).map((c) => c.text.trim());
     if (names.length === 0) {
-      toast.error("No departments selected");
+      toast.error("Niciun departament selectat");
       return;
     }
     setSubmitting(true);
     try {
       await createDepartmentsBulk(token, names);
-      toast.success(`${names.length} departments added`);
+      toast.success(`${names.length} departamente adăugate`);
       setCandidates([]);
       setFile(null);
       onImported();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save departments");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut adăuga");
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +70,7 @@ export function ChartUpload({ onImported }: { onImported: () => void }) {
   return (
     <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
       <div className="px-5 py-4 border-b border-border bg-muted/20">
-        <h3 className="text-sm font-medium text-foreground">Import Departments from Org Chart</h3>
+        <h3 className="text-sm font-medium text-foreground">Adaugă departamente direct din organigramă</h3>
       </div>
       <div className="p-5 space-y-4">
         <div className="flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/10 p-4 md:flex-row md:items-center">
@@ -84,7 +84,7 @@ export function ChartUpload({ onImported }: { onImported: () => void }) {
         {candidates.length > 0 && (
           <div className="space-y-3 pt-2 border-t border-border mt-4">
             <p className="text-sm text-muted-foreground">
-              Review extracted names below. Edit or uncheck any that are wrong, then confirm.
+              Verifică dacă departamentele coincid cu organigrama.
             </p>
             <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
               {candidates.map((c) => (
@@ -101,7 +101,7 @@ export function ChartUpload({ onImported }: { onImported: () => void }) {
               ))}
             </div>
             <Button className="w-full" onClick={handleConfirm} disabled={submitting}>
-              {submitting ? "Saving..." : "Confirm & Add Departments"}
+              {submitting ? "Se salvează..." : "Confirmă"}
             </Button>
           </div>
         )}

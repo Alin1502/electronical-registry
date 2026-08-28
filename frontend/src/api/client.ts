@@ -11,6 +11,7 @@ import type {
   SecureDocumentUploadResponse,
   RegisterTypeConfig,
   FieldConfigItem,
+  InviteEntity,
 } from "@/types/registry";
 import type { RoleEntity, UserProfile } from "@/types/registry";
 const BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -60,24 +61,40 @@ export function getFiles(token: string) {
   return jsonRequest<UploadedFile[]>(`${BASE}/files/`, { headers: authHeaders(token) });
 }
 
-export async function uploadFile(token: string, file: File, registerType: string) {
+export function getFilesForEntry(token: string, entryId: number) {
+  return jsonRequest<UploadedFile[]>(`${BASE}/files/by-entry/${entryId}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function uploadFile(token: string, file: File, registerType: string, entryId?: number) {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("register_type", registerType);
+  if (entryId != null) {
+    formData.append("entry_id", String(entryId));
+  }
   return jsonRequest<{ status: string; message: string; file_id: number }>(`${BASE}/files/upload`, {
     method: "POST",
     headers: authHeaders(token),
     body: formData,
   });
 }
-
+export function getInvites(token: string) {
+  return jsonRequest<InviteEntity[]>(`${BASE}/invites/`, { headers: authHeaders(token) });
+}
 export function removeFile(token: string, fileId: number) {
   return jsonRequest<{ status: string; message: string }>(`${BASE}/files/delete/${fileId}`, {
     method: "DELETE",
     headers: authHeaders(token),
   });
 }
-
+export function deleteEntry(token: string, entryId: number) {
+  return jsonRequest<{ status: string; message: string }>(`${BASE}/entries/${entryId}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
 export function getDownloadUrl(token: string, fileId: number) {
   return jsonRequest<{ download_url: string }>(`${BASE}/files/download/${fileId}`, {
     headers: authHeaders(token),

@@ -102,11 +102,11 @@ export default function UsersPage() {
     try {
       const roleId = selectedRole ? Number(selectedRole) : null;
       await updateUserRole(token, userId, roleId);
-      toast.success("Funcția utilizatorului a fost modificat");
+      toast.success("Rolul utilizatorului a fost modificat");
       setActiveDialog({ type: null, userId: null });
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Nu s-a putut modifica funcția utilizatorului");
+      toast.error(error instanceof Error ? error.message : "Nu s-a putut modifica rolul utilizatorului");
     }
   }
 
@@ -140,7 +140,7 @@ export default function UsersPage() {
                       <tr className="border-b border-border bg-muted/10">
                         <th className="text-left py-3 px-5 font-medium text-muted-foreground">Nume</th>
                         <th className="text-left py-3 px-5 font-medium text-muted-foreground">Email</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Funcție</th>
+                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Rol</th>
                         <th className="text-left py-3 px-5 font-medium text-muted-foreground">Permisiuni</th>
                         <th className="text-right py-3 px-5 font-medium text-muted-foreground">Actiuni</th>
                       </tr>
@@ -192,8 +192,8 @@ export default function UsersPage() {
                                   </DialogTrigger>
                                   <DialogContent>
                                     <DialogHeader>
-                                      <DialogTitle>Schimbă funcția utilizatorului</DialogTitle>
-                                      <DialogDescription>Adaugă o funcție utilizatorului {u.username}.</DialogDescription>
+                                      <DialogTitle>Schimbă rolul utilizatorului</DialogTitle>
+                                      <DialogDescription>Adaugă un rol lui {u.username}.</DialogDescription>
                                     </DialogHeader>
                                     <div className="py-4">
                                       <select
@@ -201,7 +201,7 @@ export default function UsersPage() {
                                         value={selectedRole}
                                         onChange={(e) => setSelectedRole(e.target.value)}
                                       >
-                                        <option value="">Nicio funcție(Basic Access)</option>
+                                        <option value="">Niciun rol (Basic Access)</option>
                                         {roles.map((r) => (
                                           <option key={r.id} value={r.id}>{r.name}</option>
                                         ))}

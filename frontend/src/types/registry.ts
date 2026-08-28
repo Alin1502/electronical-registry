@@ -32,7 +32,15 @@ export interface AuthResponse {
   detail?: string;
   message?: string;
 }
-
+export interface InviteEntity {
+  id: number;
+  email: string;
+  role_id: number | null;
+  role_name: string | null;
+  invited_by: string;
+  created_at: string;
+  expires_at: string;
+}
 export interface UploadedFile {
   id: number;
   filename: string;
@@ -40,6 +48,7 @@ export interface UploadedFile {
   register_type: string;
   size_bytes: number;
   user_id: number;
+  entry_id?: number | null;
 }
 
 export interface DocumentEntry {

@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Download, FilePlus2, FileQuestion, Link2, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import {
   createEntry,
+  deleteEntry,
   downloadAllPdfs,
   downloadExcel,
   getDepartments,
   getDownloadUrl,
   getEntries,
   getFiles,
+  getFilesForEntry,
   getNextNr,
   getRegisterTypes,
   removeFile,
@@ -93,11 +95,13 @@ export default function RecordsPage() {
 
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [filesByEntry, setFilesByEntry] = useState<Record<number, UploadedFile[]>>({});
   const [departments, setDepartments] = useState<NamedEntity[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filters, setFilters] = useState<RegistryFilters>({ search: "", department: "", status: "" });
   const [excelDialogOpen, setExcelDialogOpen] = useState(false);
   const [excelUseEntirePeriod, setExcelUseEntirePeriod] = useState(true);
@@ -145,8 +149,8 @@ export default function RecordsPage() {
     void refreshData(register, activeFieldConfig);
   }, [token, register, isValidRegister, loadingRegisterTypes]);
 
-  const registerFiles = useMemo(
-    () => files.filter((file) => file.register_type === activeRegister),
+  const unattachedRegisterFiles = useMemo(
+    () => files.filter((file) => file.register_type === activeRegister && !file.entry_id),
     [files, activeRegister],
   );
 
@@ -256,6 +260,64 @@ export default function RecordsPage() {
     return Object.keys(next).length === 0;
   }
 
+  const loadFilesForEntries = useCallback(async (entryIds: number[]) => {
+    if (!token || entryIds.length === 0) return;
+    try {
+      const results = await Promise.all(
+        entryIds.map(async (id) => [id, await getFilesForEntry(token, id)] as const),
+      );
+      setFilesByEntry((prev) => {
+        const next = { ...prev };
+        for (const [id, entryFiles] of results) {
+          next[id] = entryFiles;
+        }
+        return next;
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nu s-au putut incarca fisierele pentru inregistrari");
+    }
+  }, [token]);
+
+  async function handleUploadEntryFile(entryId: number, file: File) {
+    if (!token) return;
+    try {
+      await uploadFile(token, file, activeRegister, entryId);
+      const updated = await getFilesForEntry(token, entryId);
+      setFilesByEntry((prev) => ({ ...prev, [entryId]: updated }));
+      toast.success("Documentul a fost atasat");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Documentul nu a putut fi atasat");
+    }
+  }
+
+  async function handleDeleteEntryFile(fileId: number, entryId: number) {
+    if (!token) return;
+    try {
+      await removeFile(token, fileId);
+      const updated = await getFilesForEntry(token, entryId);
+      setFilesByEntry((prev) => ({ ...prev, [entryId]: updated }));
+      toast.success("Fisierul a fost sters");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Fisierul nu a putut fi sters");
+    }
+  }
+
+  async function handleDeleteEntry(entryId: number) {
+    if (!token) return;
+    try {
+      await deleteEntry(token, entryId);
+      toast.success("Intrarea a fost ștearsă");
+      setFilesByEntry((prev) => {
+        const next = { ...prev };
+        delete next[entryId];
+        return next;
+      });
+      await refreshData(activeRegister, activeFieldConfig);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Intrarea nu a putut fi ștearsă");
+    }
+  }
+
   async function handleCreateEntry() {
     if (!token) return;
     if (isReadOnlyUser) {
@@ -283,6 +345,13 @@ export default function RecordsPage() {
     }
   }
 
+  function handleUploadDialogChange(open: boolean) {
+    setUploadDialogOpen(open);
+    if (!open) {
+      setSelectedFile(null);
+    }
+  }
+
   async function handleUploadFile() {
     if (!token || !selectedFile) return;
     if (isReadOnlyUser) {
@@ -303,6 +372,7 @@ export default function RecordsPage() {
       }));
 
       setLinkedFileName(selectedFile.name);
+      setUploadDialogOpen(false);
       setEntryModalOpen(true);
       toast.success("PDF-ul a fost adaugat. Adauga detaliile ramase");
       setSelectedFile(null);
@@ -412,162 +482,181 @@ export default function RecordsPage() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-1 border-b border-border pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
-        <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col border border-border bg-background rounded-md overflow-hidden">
-          <div className="px-5 py-4 border-b border-border bg-muted/20">
-            <h3 className="text-sm font-medium text-foreground">Document Upload</h3>
-          </div>
-          <div className="p-5 space-y-4">
-            <div className="flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/10 p-4 md:flex-row md:items-center">
-              <Input
-                type="file"
-                accept="application/pdf"
-                disabled={isReadOnlyUser}
-                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                className="bg-background"
-              />
-              <Button disabled={!selectedFile || uploading || isReadOnlyUser} onClick={handleUploadFile}>
-                <UploadCloud className="mr-2 h-4 w-4" />
-                {uploading ? "Uploading..." : "Upload PDF"}
-              </Button>
-            </div>
-            {isReadOnlyUser && <p className="text-xs text-muted-foreground">Read-only users cannot upload or create entries.</p>}
-
-            {loadingFiles ? (
-              <p className="text-sm text-muted-foreground pt-2">Loading files...</p>
-            ) : registerFiles.length > 0 ? (
-              <div className="mt-4 pt-4 border-t border-border space-y-2 max-h-48 overflow-y-auto pr-2">
-                {registerFiles.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/20 p-3">
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{file.filename}</p>
-                      <p className="text-xs text-muted-foreground">Uploaded {formatDate(file.uploaded_at)}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button size="sm" variant="ghost" onClick={() => handleDownloadFile(file.id)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Delete file?</DialogTitle>
-                            <DialogDescription>This action also removes linked registry entries.</DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button variant="outline">Cancel</Button>
-                            <Button variant="danger" onClick={() => handleDeleteFile(file.id)}>Confirm Delete</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
+      <section className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
+          <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
         </div>
 
-        <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
-          <div className="px-5 py-4 border-b border-border bg-muted/20">
-            <h3 className="text-sm font-medium text-foreground">Exports</h3>
-          </div>
-          <div className="p-5 space-y-3">
-            <Dialog open={excelDialogOpen} onOpenChange={(open) => {
-              setExcelDialogOpen(open);
-              if (!open) resetExcelDialog();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="w-full" variant="outline">
-                  Download Excel
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Generate Excel export</DialogTitle>
-                  <DialogDescription>Export all entries in the current register, or limit the export to a date range.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <label className="flex items-center gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={excelUseEntirePeriod}
-                      onChange={(event) => setExcelUseEntirePeriod(event.target.checked)}
-                      className="h-4 w-4 rounded border-border"
-                    />
-                    Entire period
-                  </label>
+        <Dialog open={uploadDialogOpen} onOpenChange={handleUploadDialogChange}>
+          <DialogTrigger asChild>
+            <Button disabled={isReadOnlyUser}>
+              <UploadCloud className="mr-2 h-4 w-4" />
+              Document nou
+              {unattachedRegisterFiles.length > 0 && (
+                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-background/20 px-1.5 text-xs">
+                  {unattachedRegisterFiles.length}
+                </span>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Adaugă document</DialogTitle>
+              <DialogDescription>
+                Încarcă un PDF, apoi completează detaliile pentru a crea o intrare nouă în registru.
+              </DialogDescription>
+            </DialogHeader>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="excel-start-date">
-                        Start date
-                      </label>
-                      <Input
-                        id="excel-start-date"
-                        type="date"
-                        value={excelStartDate}
-                        onChange={(event) => setExcelStartDate(event.target.value)}
-                        disabled={excelUseEntirePeriod}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="excel-end-date">
-                        End date
-                      </label>
-                      <Input
-                        id="excel-end-date"
-                        type="date"
-                        value={excelEndDate}
-                        onChange={(event) => setExcelEndDate(event.target.value)}
-                        disabled={excelUseEntirePeriod}
-                      />
-                    </div>
+            <div className="space-y-4 py-2">
+              <div className="flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/10 p-4">
+                <Input
+                  type="file"
+                  accept="application/pdf"
+                  disabled={isReadOnlyUser}
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                  className="bg-background"
+                />
+                <Button disabled={!selectedFile || uploading || isReadOnlyUser} onClick={handleUploadFile}>
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  {uploading ? "Se încarcă..." : "Upload PDF"}
+                </Button>
+                {isReadOnlyUser && (
+                  <p className="text-xs text-muted-foreground">Utilizatorii read-only nu pot încărca documente.</p>
+                )}
+              </div>
+
+              {loadingFiles ? (
+                <p className="text-sm text-muted-foreground">Se încarcă fișierele...</p>
+              ) : unattachedRegisterFiles.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Fișiere neasociate încă unei intrări
+                  </p>
+                  <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                    {unattachedRegisterFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/20 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{file.filename}</p>
+                          <p className="text-xs text-muted-foreground">Încărcat {formatDate(file.uploaded_at)}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => handleDownloadFile(file.id)}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Ștergi fișierul?</DialogTitle>
+                                <DialogDescription>
+                                  Se șterge doar fișierul. Înregistrarea, dacă există deja, rămâne neschimbată.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <Button variant="outline">Anulează</Button>
+                                <Button variant="danger" onClick={() => handleDeleteFile(file.id)}>Confirmă ștergerea</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => { setExcelDialogOpen(false); resetExcelDialog(); }}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleDownloadExcel} disabled={exportingExcel}>
-                    {exportingExcel ? "Generating..." : "Confirm"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              ) : null}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </section>
 
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full" variant="outline">
-                  Download All PDFs
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create ZIP archive</DialogTitle>
-                  <DialogDescription>Bundle all PDFs in selected register into one archive.</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={async () => {
-                    if (!token) return;
-                    await downloadAllPdfs(token, activeRegister);
-                    toast.success("ZIP downloaded");
-                  }}>Confirm</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-background px-5 py-4">
+        <span className="mr-auto text-sm font-medium text-foreground">Exporturi</span>
+
+        <Dialog open={excelDialogOpen} onOpenChange={(open) => {
+          setExcelDialogOpen(open);
+          if (!open) resetExcelDialog();
+        }}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">Download Excel</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Generate Excel export</DialogTitle>
+              <DialogDescription>Export all entries in the current register, or limit the export to a date range.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={excelUseEntirePeriod}
+                  onChange={(event) => setExcelUseEntirePeriod(event.target.checked)}
+                  className="h-4 w-4 rounded border-border"
+                />
+                Entire period
+              </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="excel-start-date">
+                    Start date
+                  </label>
+                  <Input
+                    id="excel-start-date"
+                    type="date"
+                    value={excelStartDate}
+                    onChange={(event) => setExcelStartDate(event.target.value)}
+                    disabled={excelUseEntirePeriod}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="excel-end-date">
+                    End date
+                  </label>
+                  <Input
+                    id="excel-end-date"
+                    type="date"
+                    value={excelEndDate}
+                    onChange={(event) => setExcelEndDate(event.target.value)}
+                    disabled={excelUseEntirePeriod}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setExcelDialogOpen(false); resetExcelDialog(); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleDownloadExcel} disabled={exportingExcel}>
+                {exportingExcel ? "Generating..." : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">Download All PDFs</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create ZIP archive</DialogTitle>
+              <DialogDescription>Bundle all PDFs in selected register into one archive.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline">Cancel</Button>
+              <Button onClick={async () => {
+                if (!token) return;
+                await downloadAllPdfs(token, activeRegister);
+                toast.success("ZIP downloaded");
+              }}>Confirm</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
@@ -581,7 +670,12 @@ export default function RecordsPage() {
             filters={filters}
             loading={loadingEntries}
             fieldConfig={activeFieldConfig}
+            filesByEntry={filesByEntry}
             onDownloadFile={handleDownloadFile}
+            onVisibleEntriesChange={loadFilesForEntries}
+            onUploadEntryFile={handleUploadEntryFile}
+            onDeleteEntryFile={handleDeleteEntryFile}
+            onDeleteEntry={handleDeleteEntry}
             onUpdateStatus={async (id, status) => {
               if (!token) return;
               try {

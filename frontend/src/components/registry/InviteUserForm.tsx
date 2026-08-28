@@ -31,13 +31,13 @@ export function InviteUserForm({ roles }: { roles: NamedEntity[] }) {
   return (
     <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
       <div className="px-5 py-4 border-b border-border bg-muted/20">
-        <h3 className="text-sm font-medium text-foreground">Invite a Team Member</h3>
+        <h3 className="text-sm font-medium text-foreground">Invită un coleg să se alăture</h3>
       </div>
       <div className="p-5">
         <div className="flex flex-col gap-3 md:flex-row">
           <Input
             type="email"
-            placeholder="colleague@company.com"
+            placeholder="exemplu@domeniu.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="md:flex-1"
@@ -47,14 +47,14 @@ export function InviteUserForm({ roles }: { roles: NamedEntity[] }) {
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
           >
-            <option value="">No role</option>
+            <option value="">Fără rol</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.name}</option>
             ))}
           </select>
           <Button onClick={handleInvite} disabled={!email.trim() || sending}>
             <Mail className="mr-2 h-4 w-4" />
-            {sending ? "Sending..." : "Send Invite"}
+            {sending ? "Se trimite..." : "Trimite"}
           </Button>
         </div>
       </div>

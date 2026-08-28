@@ -39,13 +39,13 @@ export function AdvancedFilterPanel({ filters, onChange }: AdvancedFilterPanelPr
       
       <div className="grid gap-4 md:grid-cols-3">
         <Input
-          placeholder="Search by summary, code, nr..."
+          placeholder="Filtrează după nr sau rezumat"
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
           className="bg-background focus-visible:ring-1"
         />
         <Input
-          placeholder="Department"
+          placeholder="Departament"
           value={filters.department}
           onChange={(event) => onChange({ ...filters, department: event.target.value })}
           className="bg-background focus-visible:ring-1"

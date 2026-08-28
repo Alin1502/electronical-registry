@@ -31,20 +31,20 @@ export function RoleManager({
   return (
     <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-        <h3 className="text-sm font-medium text-foreground">Roles</h3>
+        <h3 className="text-sm font-medium text-foreground">Roluri</h3>
         <Badge variant="secondary" className="font-normal">{items.length}</Badge>
       </div>
       <div className="p-5">
         <div className="mb-5 flex flex-col gap-2 xl:flex-row">
-          <Input className="flex-1" placeholder="Role name..." value={name} onChange={(e) => setName(e.target.value)} />
+          <Input className="flex-1" placeholder="Rol" value={name} onChange={(e) => setName(e.target.value)} />
           <select
             className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={permissionLevel}
             onChange={(e) => setPermissionLevel(e.target.value)}
           >
-            <option value="read">Read Only</option>
-            <option value="read_write">Read & Write</option>
-            <option value="full_access">Full Access (Admin)</option>
+            <option value="read">Citire</option>
+            <option value="read_write">Citire&Scriere</option>
+            <option value="full_access">Acces integral(Admin)</option>
           </select>
           <Button
             onClick={async () => {
@@ -55,7 +55,7 @@ export function RoleManager({
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Add
+            Adaugă
           </Button>
         </div>
 
@@ -74,12 +74,12 @@ export function RoleManager({
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Delete role?</DialogTitle>
-                    <DialogDescription>Users assigned this role will need a new one.</DialogDescription>
+                    <DialogTitle>Ștergi rolul?</DialogTitle>
+                    <DialogDescription>Utilizatorii cu această funcție vor avea nevoie de una nouă</DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
-                    <Button variant="outline">Cancel</Button>
-                    <Button variant="danger" onClick={() => onDelete(item.id)}>Confirm</Button>
+                    <Button variant="outline">Anulare</Button>
+                    <Button variant="danger" onClick={() => onDelete(item.id)}>Confirmă</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

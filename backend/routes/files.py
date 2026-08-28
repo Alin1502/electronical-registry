@@ -139,7 +139,9 @@ def delete_file(file_id:int, db: Session=Depends(get_db), current_user: dict=Dep
         raise HTTPException(status_code=404, detail="File not found or unauthorized")
     if file_record.is_secure_document and not (current_user["is_owner"] or current_user["permission_level"] == "full_access"):
         raise HTTPException(status_code=403, detail="Admin access required")
-
+    db.query(DocumentEntry).filter(DocumentEntry.file_id == file_id).update(
+        {DocumentEntry.file_id: None}
+    )
     try:
         delete_file_from_s3(file_record.s3_key)
     except ClientError as e:
