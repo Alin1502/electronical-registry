@@ -374,9 +374,6 @@ export default function AdminPage() {
       ) : null}
 
 
-      {/* =====================================================
-          ORGANIZATION
-      ====================================================== */}
       <section>
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-foreground">
@@ -390,42 +387,45 @@ export default function AdminPage() {
         </div>
 
         <div className="grid gap-10 lg:grid-cols-2">
-
           {/* Departments */}
-          <EntityManager
-            title="Departamente"
-            items={departments}
+          <div>
+            <div className="mt-4">
+              <EntityManager
+                title="Departamente"
+                items={departments}
 
-            onCreate={async (name) => {
-              if (!token) return;
+                onCreate={async (name) => {
+                  if (!token) return;
 
-              await createDepartment(token, name);
+                  await createDepartment(token, name);
 
-              toast.success("Departament adăugat");
+                  toast.success("Departament adăugat");
 
-              await loadAll();
-            }}
+                  await loadAll();
+                }}
 
-            onUpdate={async (id, name) => {
-              if (!token || !name) return;
+                onUpdate={async (id, name) => {
+                  if (!token || !name) return;
 
-              await updateDepartment(token, id, name);
+                  await updateDepartment(token, id, name);
 
-              toast.success("Departament modificat");
+                  toast.success("Departament modificat");
 
-              await loadAll();
-            }}
+                  await loadAll();
+                }}
 
-            onDelete={async (id) => {
-              if (!token) return;
+                onDelete={async (id) => {
+                  if (!token) return;
 
-              await deleteDepartment(token, id);
+                  await deleteDepartment(token, id);
 
-              toast.success("Departament șters");
+                  toast.success("Departament șters");
 
-              await loadAll();
-            }}
-          />
+                  await loadAll();
+                }}
+              />
+            </div>
+          </div>
 
 
           {/* Roles */}

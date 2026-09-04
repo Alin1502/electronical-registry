@@ -113,21 +113,21 @@ export default function RegistryPage() {
 
       <section className="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x border border-border bg-background rounded-md overflow-hidden">
         <StatCard
-          title="Total Entries"
+          title="Documente adăugate"
           value={<AnimatedCounter value={stats?.total_entries ?? allEntries.length} />}
-          detail={`+${stats?.recent_entries_last_7_days ?? 0} in last ${RECENT_WINDOW_DAYS} days`}
+          detail={`+${stats?.recent_entries_last_7_days ?? 0} în ultimele ${RECENT_WINDOW_DAYS} zile`}
         />
-        <StatCard title="Pending Validation" value={<AnimatedCounter value={stats?.pending_validation ?? 0} />} detail="awaiting review" />
-        <StatCard title="Registries" value={stats?.registry_count ?? registerTypes.length} detail="active registry types" />
+        <StatCard title="Status" value={<AnimatedCounter value={stats?.pending_validation ?? 0} />} detail="în așteptare" />
+        <StatCard title="Registre" value={stats?.registry_count ?? registerTypes.length} detail="registre active" />
         <StatCard
-          title="Operators"
+          title="Operatori"
           value={stats?.operator_count ?? 0}
-          detail={`${stats?.department_count ?? 0} departments`}
+          detail={`${stats?.department_count ?? 0} departamente`}
         />
         <StatCard
-          title="Storage"
+          title="Spațiu de stocare"
           value={formatStorage(stats?.total_storage_bytes ?? 0)}
-          detail="document storage used"
+          detail="utilizați"
         />
       </section>
 

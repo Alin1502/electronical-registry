@@ -1,6 +1,7 @@
 from core.database import Base
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
+from models.associations import user_departments
 
 class User(Base):
     __tablename__ = "users"
@@ -14,3 +15,4 @@ class User(Base):
     avatar_s3_key = Column(String, nullable=True)
 
     company = relationship("Company")
+    departments = relationship("Department", secondary=user_departments, back_populates="users")

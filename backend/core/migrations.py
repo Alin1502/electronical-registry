@@ -137,3 +137,15 @@ def ensure_file_entry_link(engine):
             WHERE document_entries.file_id = files.id
               AND files.entry_id IS NULL
         """))
+
+def ensure_user_department_link(engine):
+    inspector = inspect(engine)
+    if "user_departments" not in inspector.get_table_names():
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE user_departments (
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+                    PRIMARY KEY (user_id, department_id)
+                )
+            """))

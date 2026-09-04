@@ -102,7 +102,10 @@ export function TopNavigation({
 
     function handleScroll() {
       const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
-      setScrolled(scrollTop > 24);
+      const availableScroll = scrollContainer
+        ? scrollContainer.scrollHeight - scrollContainer.clientHeight
+        : document.documentElement.scrollHeight - window.innerHeight;
+      setScrolled(scrollTop > 24 && availableScroll > 60);
     }
 
     if (scrollContainer) {
@@ -156,6 +159,8 @@ export function TopNavigation({
 
   const isFloatingHeader = isHomePage || !token;
   const shouldOffsetForSidebar = isHomePage && token;
+  const headerHeight = isFloatingHeader && scrolled ? "72px" : "108px";
+  const visibleHeaderHeight = scrolled ? "72px" : "108px";
   const headerClasses = isFloatingHeader
     ? shouldOffsetForSidebar
       ? sidebarCollapsed
@@ -168,15 +173,20 @@ export function TopNavigation({
     <header
       className={`${headerClasses} transition-[height,box-shadow,backdrop-filter,background-color] duration-300`}
       style={{
-        height: scrolled ? "72px" : "108px",
-        backgroundColor: scrolled ? "hsl(var(--background) / 0.12)" : "hsl(var(--background) / 0.18)",
-        backdropFilter: scrolled ? "blur(24px) saturate(1.4)" : "blur(20px) saturate(1.22)",
-        WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.4)" : "blur(20px) saturate(1.22)",
-        borderBottom: scrolled ? "1px solid hsl(var(--border) / 0.18)" : "1px solid hsl(var(--border) / 0.12)",
-        boxShadow: scrolled ? "0 12px 34px -26px hsl(var(--foreground) / 0.22)" : "0 10px 28px -26px hsl(var(--foreground) / 0.14)",
+        height: isFloatingHeader ? headerHeight : "108px",
       }}
     >
-      <div className="flex h-full w-full items-center justify-between px-6 sm:px-8 lg:px-12 xl:px-16">
+      <div
+        className="flex w-full items-center justify-between px-6 sm:px-8 lg:px-12 xl:px-16 transition-[height,box-shadow,backdrop-filter,background-color] duration-300"
+        style={{
+          height: isFloatingHeader ? "100%" : visibleHeaderHeight,
+          backgroundColor: scrolled ? "hsl(var(--background) / 0.12)" : "hsl(var(--background) / 0.18)",
+          backdropFilter: scrolled ? "blur(24px) saturate(1.4)" : "blur(20px) saturate(1.22)",
+          WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.4)" : "blur(20px) saturate(1.22)",
+          borderBottom: scrolled ? "1px solid hsl(var(--border) / 0.18)" : "1px solid hsl(var(--border) / 0.12)",
+          boxShadow: scrolled ? "0 12px 34px -26px hsl(var(--foreground) / 0.22)" : "0 10px 28px -26px hsl(var(--foreground) / 0.14)",
+        }}
+      >
         
         {/* Left: Logo */}
         <div className="flex items-center gap-5 shrink-0 lg:w-[250px]">

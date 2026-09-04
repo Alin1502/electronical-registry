@@ -540,3 +540,18 @@ export function deleteRegisterType(token: string, id: number) {
     headers: authHeaders(token),
   });
 }
+
+export async function updateUserDepartments(token: string, userId: number, departmentIds: number[]): Promise<void> {
+  const response = await fetch(`${BASE}/admin/users/${userId}/departments`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ department_ids: departmentIds }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to update departments");
+  }
+}

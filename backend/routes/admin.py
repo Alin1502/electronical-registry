@@ -18,7 +18,8 @@ router = APIRouter()
 
 class RoleUpdateRequest(BaseModel):
     role_id: int | None
-
+class DepartmentAssignRequest(BaseModel):
+    department_ids: list[int]
 @router.get("/stats", response_model=AdminStatsResponse)
 def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     require_admin_access(current_user)
@@ -146,6 +147,7 @@ def get_company_users(db: Session = Depends(get_db), current_user: dict = Depend
             "role": role_name,
             "permission_level": permission_level,
             "avatar_url": avatar_url,
+            "departments": [{"id": d.id, "name": d.name} for d in user.departments],
         })
     
     return result
@@ -239,3 +241,37 @@ def update_user_role(
         db.commit()
 
     return {"detail": "Role updated"}
+
+@router.put("/users/{user_id}/departments")
+def update_user_departments(
+    user_id: int,
+    payload: DepartmentAssignRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user["is_owner"]:
+        raise HTTPException(status_code=403, detail="Only the admin can assign departments")
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id, User.company_id == current_user["company_id"])
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    departments = (
+        db.query(Department)
+        .filter(
+            Department.id.in_(payload.department_ids),
+            Department.company_id == current_user["company_id"],
+        )
+        .all()
+    )
+    if len(departments) != len(set(payload.department_ids)):
+        raise HTTPException(status_code=400, detail="One or more departments not found")
+
+    user.departments = departments
+    db.commit()
+
+    return {"detail": "Departments updated"}

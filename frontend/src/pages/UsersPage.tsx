@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Mail,
-  Shield,
+  Building2,
   Trash2,
   Edit,
   Users,
@@ -12,8 +12,10 @@ import Avatar from "@/components/ui/Avatar";
 import {
   getEntries,
   getCompanyUsers,
+  getDepartments,
   getRoles,
   removeUser,
+  updateUserDepartments,
   updateUserRole,
 } from "@/api/client";
 
@@ -47,6 +49,7 @@ interface CompanyUser {
   role: string | null;
   permission_level: string;
   avatar_url: string | null;
+  departments: NamedEntity[];
 }
 
 
@@ -77,13 +80,19 @@ export default function UsersPage() {
   const [entries, setEntries] = useState<DocumentEntry[]>([]);
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [roles, setRoles] = useState<NamedEntity[]>([]);
+  const [departments, setDepartments] = useState<NamedEntity[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [selectedRole, setSelectedRole] =
     useState<string>("");
 
+  const [selectedDepartmentIds, setSelectedDepartmentIds] =
+    useState<number[]>([]);
+
+  const [savingDepartments, setSavingDepartments] = useState(false);
+
   const [activeDialog, setActiveDialog] = useState<{
-    type: "edit" | "delete" | null;
+    type: "edit" | "delete" | "departments" | null;
     userId: number | null;
   }>({
     type: null,
@@ -116,15 +125,18 @@ export default function UsersPage() {
         usersData,
         entriesData,
         rolesData,
+        departmentsData,
       ] = await Promise.all([
         getCompanyUsers(token),
         getEntries(token, "contracte"),
         getRoles(token),
+        getDepartments(token),
       ]);
 
       setUsers(usersData);
       setEntries(entriesData);
       setRoles(rolesData);
+      setDepartments(departmentsData);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -193,6 +205,49 @@ export default function UsersPage() {
           ? error.message
           : "Nu s-a putut modifica rolul utilizatorului"
       );
+    }
+  }
+
+
+  function toggleSelectedDepartment(departmentId: number) {
+    setSelectedDepartmentIds((prev) =>
+      prev.includes(departmentId)
+        ? prev.filter((id) => id !== departmentId)
+        : [...prev, departmentId]
+    );
+  }
+
+
+  async function handleUpdateDepartments(userId: number) {
+    if (!token) return;
+
+    setSavingDepartments(true);
+
+    try {
+      await updateUserDepartments(
+        token,
+        userId,
+        selectedDepartmentIds
+      );
+
+      toast.success(
+        "Departamentele utilizatorului au fost actualizate"
+      );
+
+      setActiveDialog({
+        type: null,
+        userId: null,
+      });
+
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Nu s-au putut actualiza departamentele"
+      );
+    } finally {
+      setSavingDepartments(false);
     }
   }
 
@@ -284,6 +339,10 @@ export default function UsersPage() {
                         Permisiuni
                       </th>
 
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Departamente
+                      </th>
+
                       {canManageUsers && (
                         <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           Acțiuni
@@ -333,7 +392,6 @@ export default function UsersPage() {
 
                             </div>
                           </td>
-
 
                           {/* EMAIL */}
                           <td className="px-4 py-4">
@@ -392,10 +450,153 @@ export default function UsersPage() {
                           </td>
 
 
+                          {/* DEPARTMENTS */}
+                          <td className="px-4 py-4">
+                            {u.is_owner ? (
+                              <span className="text-muted-foreground">
+                                Toate
+                              </span>
+                            ) : u.departments.length === 0 ? (
+                              <span className="text-muted-foreground">
+                                Fără departament
+                              </span>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {u.departments.map((d) => (
+                                  <Badge
+                                    key={d.id}
+                                    variant="secondary"
+                                    className="font-normal"
+                                  >
+                                    {d.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+
+
                           {/* ACTIONS */}
                           {canManageUsers && (
                             <td className="px-4 py-4">
                               <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+
+                                {/* DEPARTMENTS */}
+                                <Dialog
+                                  open={
+                                    activeDialog.type ===
+                                      "departments" &&
+                                    activeDialog.userId ===
+                                      u.id
+                                  }
+                                  onOpenChange={(isOpen) => {
+                                    if (isOpen) {
+                                      setActiveDialog({
+                                        type: "departments",
+                                        userId: u.id,
+                                      });
+
+                                      setSelectedDepartmentIds(
+                                        u.departments.map((d) => d.id)
+                                      );
+                                    } else {
+                                      setActiveDialog({
+                                        type: null,
+                                        userId: null,
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      disabled={
+                                        u.is_owner ||
+                                        !canManageUsers
+                                      }
+                                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    >
+                                      <Building2 className="h-4 w-4" />
+
+                                      <span className="sr-only">
+                                        Asignează departamente
+                                      </span>
+                                    </Button>
+                                  </DialogTrigger>
+
+
+                                  <DialogContent>
+
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        Asignează departamente
+                                      </DialogTitle>
+
+                                      <DialogDescription>
+                                        Selectează departamentele pentru{" "}
+                                        <strong>
+                                          {u.username}
+                                        </strong>
+                                        .
+                                      </DialogDescription>
+                                    </DialogHeader>
+
+
+                                    <div className="py-4">
+                                      {departments.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                          Nu există departamente create.
+                                        </p>
+                                      ) : (
+                                        <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                                          {departments.map((d) => (
+                                            <label
+                                              key={d.id}
+                                              className="flex items-center gap-2 rounded-md border border-transparent p-2 text-sm hover:border-border hover:bg-muted/30"
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-border"
+                                                checked={selectedDepartmentIds.includes(d.id)}
+                                                onChange={() => toggleSelectedDepartment(d.id)}
+                                              />
+                                              {d.name}
+                                            </label>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+
+                                    <DialogFooter>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() =>
+                                          setActiveDialog({
+                                            type: null,
+                                            userId: null,
+                                          })
+                                        }
+                                      >
+                                        Anulează
+                                      </Button>
+
+                                      <Button
+                                        disabled={savingDepartments}
+                                        onClick={() =>
+                                          void handleUpdateDepartments(
+                                            u.id
+                                          )
+                                        }
+                                      >
+                                        {savingDepartments ? "Se salvează..." : "Salvează"}
+                                      </Button>
+                                    </DialogFooter>
+
+                                  </DialogContent>
+                                </Dialog>
+
 
                                 {/* EDIT */}
                                 <Dialog
@@ -625,10 +826,6 @@ export default function UsersPage() {
 
           </section>
 
-
-          {/* =================================================
-              ACTIVITY
-          ================================================== */}
           <section>
             <div className="mb-4">
               <h2 className="text-base font-semibold text-foreground">

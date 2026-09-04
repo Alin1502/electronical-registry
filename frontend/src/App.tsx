@@ -14,7 +14,7 @@ import SecureDocumentsPage from "@/pages/SecureDocumentsPage";
 import { useAuthStore } from "@/store/authStore";
 import { isTokenValid } from "@/lib/auth";
 import AcceptInvitePage from "@/pages/AcceptInvitePage";
-
+import DepartmentsOverviewPage from "@/pages/DepartmentsOverviewPage";
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { token } = useAuthStore();
   if (!isTokenValid(token)) return <Navigate to="/login" replace />;
@@ -107,7 +107,14 @@ export default function App() {
             </AdminRoute>
           }
         />
-        
+        <Route
+          path="/admin/departments"
+          element={
+            <AdminRoute>
+              <DepartmentsOverviewPage />
+            </AdminRoute>
+          }
+        />
         <Route
           path="/settings"
           element={

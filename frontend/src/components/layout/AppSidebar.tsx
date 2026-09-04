@@ -385,6 +385,18 @@ export function AppSidebar({
               )}
 
 
+              {hasAdminAccess && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    navigate("/admin/departments")
+                  }
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Detalii departamente
+                </DropdownMenuItem>
+              )}
+
+
               <DropdownMenuSeparator />
 
 
