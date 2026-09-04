@@ -22,7 +22,7 @@ export function AdvancedFilterPanel({ filters, onChange }: AdvancedFilterPanelPr
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-          Filter Records
+          Filtre
         </h3>
         {hasFilters && (
           <Button
@@ -32,7 +32,7 @@ export function AdvancedFilterPanel({ filters, onChange }: AdvancedFilterPanelPr
             onClick={() => onChange({ search: "", department: "", status: "" })}
           >
             <X className="mr-2 h-4 w-4" />
-            Clear Filters
+            Șterge filtrele
           </Button>
         )}
       </div>

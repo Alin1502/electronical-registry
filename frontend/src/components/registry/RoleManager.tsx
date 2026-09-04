@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 import type { NamedEntity } from "@/types/registry";
 
 interface RoleEntity extends NamedEntity {
@@ -11,9 +20,9 @@ interface RoleEntity extends NamedEntity {
 }
 
 const PERMISSION_LABELS: Record<string, string> = {
-  full_access: "Full Access (Admin)",
-  read_write: "Read & Write",
-  read: "Read Only",
+  full_access: "Acces integral",
+  read_write: "Citire și scriere",
+  read: "Citire",
 };
 
 export function RoleManager({
@@ -28,65 +37,138 @@ export function RoleManager({
   const [name, setName] = useState("");
   const [permissionLevel, setPermissionLevel] = useState("read");
 
+  async function handleCreate() {
+    if (!name.trim()) return;
+
+    await onCreate(name.trim(), permissionLevel);
+
+    setName("");
+    setPermissionLevel("read");
+  }
+
   return (
-    <div className="flex flex-col border border-border bg-background rounded-md overflow-hidden">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-        <h3 className="text-sm font-medium text-foreground">Roluri</h3>
-        <Badge variant="secondary" className="font-normal">{items.length}</Badge>
-      </div>
-      <div className="p-5">
-        <div className="mb-5 flex flex-col gap-2 xl:flex-row">
-          <Input className="flex-1" placeholder="Rol" value={name} onChange={(e) => setName(e.target.value)} />
-          <select
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            value={permissionLevel}
-            onChange={(e) => setPermissionLevel(e.target.value)}
-          >
-            <option value="read">Citire</option>
-            <option value="read_write">Citire&Scriere</option>
-            <option value="full_access">Acces integral(Admin)</option>
-          </select>
-          <Button
-            onClick={async () => {
-              if (!name.trim()) return;
-              await onCreate(name.trim(), permissionLevel);
-              setName("");
-              setPermissionLevel("read");
-            }}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Adaugă
-          </Button>
+    <section>
+      {/* Header */}
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">
+            Roluri
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {items.length === 0
+              ? "Nu există roluri."
+              : items.length === 1
+                ? "1 rol configurat"
+                : `${items.length} roluri configurate`}
+          </p>
         </div>
 
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-transparent hover:border-border hover:bg-muted/30 p-2 transition-colors">
-              <div className="pl-1">
-                <span className="text-sm font-medium text-foreground">{item.name}</span>
-                <p className="text-xs text-muted-foreground">{PERMISSION_LABELS[item.permission_level] ?? item.permission_level}</p>
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {items.length}
+        </span>
+      </div>
+
+      {/* Create role */}
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <Input
+          className="flex-1"
+          placeholder="Numele rolului..."
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              void handleCreate();
+            }
+          }}
+        />
+
+        <select
+          className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          value={permissionLevel}
+          onChange={(e) => setPermissionLevel(e.target.value)}
+        >
+          <option value="read">Citire</option>
+          <option value="read_write">Citire și scriere</option>
+          <option value="full_access">Acces integral</option>
+        </select>
+
+        <Button
+          onClick={() => void handleCreate()}
+          disabled={!name.trim()}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Adaugă
+        </Button>
+      </div>
+
+      {/* Roles */}
+      <div className="divide-y divide-border border-y border-border">
+        {items.length === 0 ? (
+          <div className="py-6 text-sm text-muted-foreground">
+            Adaugă primul rol folosind câmpul de mai sus.
+          </div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="group flex min-h-14 items-center justify-between gap-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {item.name}
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {PERMISSION_LABELS[item.permission_level] ??
+                    item.permission_level}
+                </p>
               </div>
+
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
+                  >
                     <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">
+                      Șterge rolul
+                    </span>
                   </Button>
                 </DialogTrigger>
+
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Ștergi rolul?</DialogTitle>
-                    <DialogDescription>Utilizatorii cu această funcție vor avea nevoie de una nouă</DialogDescription>
+                    <DialogTitle>
+                      Ștergi rolul?
+                    </DialogTitle>
+
+                    <DialogDescription>
+                      Utilizatorii cu acest rol vor avea nevoie de
+                      unul nou.
+                    </DialogDescription>
                   </DialogHeader>
+
                   <DialogFooter>
-                    <Button variant="outline">Anulare</Button>
-                    <Button variant="danger" onClick={() => onDelete(item.id)}>Confirmă</Button>
+                    <Button variant="outline">
+                      Anulare
+                    </Button>
+
+                    <Button
+                      variant="danger"
+                      onClick={() => onDelete(item.id)}
+                    >
+                      Șterge
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
-    </div>
+    </section>
   );
 }

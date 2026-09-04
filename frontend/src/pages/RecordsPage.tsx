@@ -485,7 +485,7 @@ export default function RecordsPage() {
       <section className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">{activeRegisterLabel}</h1>
-          <p className="text-sm text-muted-foreground">Manage entries, upload documents, and export data for this register.</p>
+          <p className="text-sm text-muted-foreground">Gestionează înregistrările, încarcă documente și exportă datele pentru acest registru.</p>
         </div>
 
         <Dialog open={uploadDialogOpen} onOpenChange={handleUploadDialogChange}>
@@ -575,19 +575,19 @@ export default function RecordsPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-background px-5 py-4">
-        <span className="mr-auto text-sm font-medium text-foreground">Exporturi</span>
+        <span className="mr-auto text-sm font-medium text-foreground">Exportă</span>
 
         <Dialog open={excelDialogOpen} onOpenChange={(open) => {
           setExcelDialogOpen(open);
           if (!open) resetExcelDialog();
         }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">Download Excel</Button>
+            <Button variant="outline" size="sm">Descarcă Excel</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Generate Excel export</DialogTitle>
-              <DialogDescription>Export all entries in the current register, or limit the export to a date range.</DialogDescription>
+              <DialogTitle>Raport excel</DialogTitle>
+              <DialogDescription>Excelul poate fi generat pe întreaga perioadă sau pe un anumit interval de timp</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <label className="flex items-center gap-2 text-sm text-foreground">
@@ -597,13 +597,13 @@ export default function RecordsPage() {
                   onChange={(event) => setExcelUseEntirePeriod(event.target.checked)}
                   className="h-4 w-4 rounded border-border"
                 />
-                Entire period
+                Întreaga perioadă
               </label>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground" htmlFor="excel-start-date">
-                    Start date
+                    Data de început
                   </label>
                   <Input
                     id="excel-start-date"
@@ -615,7 +615,7 @@ export default function RecordsPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground" htmlFor="excel-end-date">
-                    End date
+                    Data de sfârșit
                   </label>
                   <Input
                     id="excel-end-date"
@@ -629,7 +629,7 @@ export default function RecordsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setExcelDialogOpen(false); resetExcelDialog(); }}>
-                Cancel
+                Anulare
               </Button>
               <Button onClick={handleDownloadExcel} disabled={exportingExcel}>
                 {exportingExcel ? "Generating..." : "Confirm"}
@@ -640,15 +640,15 @@ export default function RecordsPage() {
 
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">Download All PDFs</Button>
+            <Button variant="outline" size="sm">Descarcă toate PDF-urile din registru</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create ZIP archive</DialogTitle>
-              <DialogDescription>Bundle all PDFs in selected register into one archive.</DialogDescription>
+              <DialogTitle>Creează arhivă</DialogTitle>
+              <DialogDescription>Toate documentele adăugate se vor include într-o singură arhivă.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Anulare</Button>
               <Button onClick={async () => {
                 if (!token) return;
                 await downloadAllPdfs(token, activeRegister);
@@ -693,8 +693,8 @@ export default function RecordsPage() {
       <Dialog open={entryModalOpen} onOpenChange={handleEntryModalChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Complete Entry Details</DialogTitle>
-            <DialogDescription>Step 2 of 2 after upload: fill nr, cod and details for this uploaded PDF.</DialogDescription>
+            <DialogTitle>Detalii document</DialogTitle>
+            <DialogDescription>Include informațiile necesare pentru documentul selectat.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
@@ -702,7 +702,7 @@ export default function RecordsPage() {
               <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
                 <div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
                   <Link2 className="h-4 w-4" />
-                  Linked PDF
+                  Link la PDF
                 </div>
                 <div>{linkedFileName}</div>
               </div>
@@ -764,11 +764,11 @@ export default function RecordsPage() {
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Anulare</Button>
             </DialogClose>
             <Button onClick={handleCreateEntry} disabled={isReadOnlyUser}>
               <FilePlus2 className="mr-2 h-4 w-4" />
-              {isAdmin ? "Save Entry" : "Submit for Validation"}
+              {isAdmin ? "Salvează" : "Trimite către validare"}
             </Button>
           </DialogFooter>
         </DialogContent>

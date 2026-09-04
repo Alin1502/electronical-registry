@@ -19,9 +19,9 @@ function normalizeStatus(entry: DocumentEntry) {
   }
 
   const resolution = entry.mod_rezolvare?.trim().toLowerCase() ?? "";
-  if (resolution.includes("validat")) return "validated";
-  if (resolution.includes("respins")) return "rejected";
-  if (resolution.includes("arhiva")) return "archived";
+  if (resolution.includes("validated")) return "validated";
+  if (resolution.includes("rejected")) return "rejected";
+  if (resolution.includes("archived")) return "archived";
 
   return "pending";
 }
@@ -35,16 +35,16 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
   };
 
   const chartData = [
-    { name: "Validated", value: statusCount.validated, color: COLORS.validated },
-    { name: "Pending", value: statusCount.pending, color: COLORS.pending },
-    { name: "Rejected", value: statusCount.rejected, color: COLORS.rejected },
-    { name: "Archived", value: statusCount.archived, color: COLORS.archived },
+    { name: "Validat", value: statusCount.validated, color: COLORS.validated },
+    { name: "Spre Validare", value: statusCount.pending, color: COLORS.pending },
+    { name: "Respins", value: statusCount.rejected, color: COLORS.rejected },
+    { name: "Arhivat", value: statusCount.archived, color: COLORS.archived },
   ].filter((d) => d.value > 0);
 
   if (chartData.length === 0) {
     return (
       <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-        <h3 className="text-sm font-medium mb-6 text-foreground">Distribuția Statusului Documentelor</h3>
+        <h3 className="text-sm font-medium mb-6 text-foreground">Status documente</h3>
         <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
           Fără date disponibile
         </div>
@@ -54,7 +54,7 @@ export function StatusDistributionChart({ entries }: StatusDistributionChartProp
 
   return (
     <div className="flex flex-col border border-border bg-background p-5 rounded-md">
-      <h3 className="text-sm font-medium mb-6 text-foreground">Distribuția Statusului Documentelor</h3>
+      <h3 className="text-sm font-medium mb-6 text-foreground">Status documente</h3>
       <div className="h-[250px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
